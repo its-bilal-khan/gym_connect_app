@@ -18,9 +18,54 @@ class WorkoutRepository {
 
   const WorkoutRepository(this._supabase);
 
-  Future<WorkoutRoutineDay> getTodayRoutine({int dayNumber = 24}) async {
-    // In production, queries Supabase workout_routine_days joined with exercises.
-    // Falls back gracefully to the pre-seeded smart 90-day routine program.
+  Future<WorkoutRoutineDay> getTodayRoutine({int dayNumber = 1}) async {
+    final client = _supabase;
+    if (client != null) {
+      try {
+        final data = await client
+            .from('workout_routine_days')
+            .select('*, workout_day_exercises(*, exercises(*))')
+            .eq('day_number', dayNumber)
+            .maybeSingle();
+
+        if (data != null && data['workout_day_exercises'] != null) {
+          final rawExercises = List<Map<String, dynamic>>.from(data['workout_day_exercises'] as List);
+          rawExercises.sort((a, b) => ((a['order_index'] as int?) ?? 0).compareTo((b['order_index'] as int?) ?? 0));
+
+          final dayExercises = <WorkoutDayExercise>[];
+          for (final item in rawExercises) {
+            final exData = item['exercises'] as Map<String, dynamic>?;
+            if (exData != null) {
+              final exercise = Exercise.fromJson(exData);
+              dayExercises.add(WorkoutDayExercise(
+                id: item['id'] as String? ?? 'wde-${dayExercises.length + 1}',
+                exercise: exercise,
+                orderIndex: (item['order_index'] as int?) ?? (dayExercises.length + 1),
+                targetSets: (item['target_sets'] as int?) ?? 3,
+                targetRepsRange: (item['target_reps_range'] as String?) ?? '8-12',
+                restSeconds: (item['rest_seconds'] as int?) ?? 60,
+                notes: item['notes'] as String?,
+              ));
+            }
+          }
+
+          if (dayExercises.isNotEmpty) {
+            return WorkoutRoutineDay(
+              id: data['id'] as String? ?? 'day-$dayNumber',
+              routineId: data['routine_id'] as String? ?? 'routine-1',
+              dayNumber: dayNumber,
+              title: data['title'] as String? ?? 'Day $dayNumber Workout',
+              muscleGroups: (data['muscle_groups'] as List?)?.map((e) => e.toString()).toList() ?? ['Full Body'],
+              isRestDay: (data['is_rest_day'] as bool?) ?? false,
+              exercises: dayExercises,
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('WorkoutRepository: Supabase fetch error, using local fallback: $e');
+      }
+    }
+
     final catalog = _getDefaultRoutineDays();
     final index = (dayNumber - 1) % catalog.length;
     return catalog[index];
@@ -79,39 +124,43 @@ class WorkoutRepository {
   List<WorkoutRoutineDay> _getDefaultRoutineDays() {
     const ex1 = Exercise(
       id: 'ex-1',
-      name: 'Incline Dumbbell Press',
-      targetMuscle: 'Upper Chest',
-      equipment: 'Dumbbells',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      tips: 'Set bench to 30 degrees. Retract scapula and drive elbows in a 45-degree angle.',
-      instructions: ['Lower dumbbells under control for 3 seconds.', 'Drive up without locking elbows.'],
+      name: 'Full Range Push-Up Form',
+      targetMuscle: 'Chest & Core',
+      equipment: 'Bodyweight',
+      videoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/push_up_form.mp4',
+      sideVideoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/demo.mp4',
+      tips: 'Keep elbows tucked at 45 degrees. Lower chest to floor and lock out at top.',
+      instructions: ['Place hands slightly wider than shoulders.', 'Lower under control for 2 seconds.', 'Push up explosively while bracing core.'],
     );
     const ex2 = Exercise(
       id: 'ex-2',
-      name: 'Low-to-High Cable Flyes',
-      targetMuscle: 'Upper Chest / Clavicular',
-      equipment: 'Cable Machine',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      tips: 'Keep a slight bend in elbows. Squeeze chest hard at the peak for 1 second.',
-      instructions: ['Set pulleys at bottom.', 'Bring hands upward meeting at eye level.'],
+      name: 'Dumbbell Overhead Shoulder Press',
+      targetMuscle: 'Anterior & Lateral Deltoids',
+      equipment: 'Dumbbells',
+      videoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/shoulder_press_form.mp4',
+      sideVideoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/demo.mp4',
+      tips: 'Press directly overhead without arching lower back. Control the descent.',
+      instructions: ['Hold dumbbells at ear level with 90-degree elbows.', 'Drive upward until arms are straight.', 'Lower slowly to start position.'],
     );
     const ex3 = Exercise(
       id: 'ex-3',
-      name: 'Overhead Cable Rope Extension',
-      targetMuscle: 'Triceps Long Head',
-      equipment: 'Cable Machine',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-      tips: 'Keep elbows tucked near ears. Flare the rope outwards at full extension.',
-      instructions: ['Hinge slightly at hips.', 'Extend forearms fully and control negative.'],
+      name: 'Standing Biceps Dumbbell Curl',
+      targetMuscle: 'Biceps Brachii',
+      equipment: 'Dumbbells',
+      videoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/curl_form.mp4',
+      sideVideoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/demo.mp4',
+      tips: 'Keep elbows pinned to your sides. Supinate wrists at the top for maximum peak contraction.',
+      instructions: ['Stand with feet shoulder-width apart.', 'Curl dumbbells upward while keeping torso still.', 'Squeeze biceps hard for 1 second at top.'],
     );
     const ex4 = Exercise(
       id: 'ex-4',
-      name: 'Triceps Straight Bar Pushdown',
-      targetMuscle: 'Triceps Lateral Head',
-      equipment: 'Cable Machine',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
-      tips: 'Lock upper arms against ribs. Squeeze triceps at bottom lockout.',
-      instructions: ['Grip overhand with knuckles up.', 'Push down explosively, control release.'],
+      name: 'Barbell Back Squat',
+      targetMuscle: 'Quadriceps & Glutes',
+      equipment: 'Barbell',
+      videoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/squat_form.mp4',
+      sideVideoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/demo.mp4',
+      tips: 'Break at hips and knees simultaneously. Keep chest proud and squat below parallel.',
+      instructions: ['Position bar across upper traps.', 'Descend until hips are below knee crease.', 'Drive through heels to stand back up.'],
     );
 
     const exLat = Exercise(
@@ -119,7 +168,8 @@ class WorkoutRepository {
       name: 'Wide Grip Lat Pulldown',
       targetMuscle: 'Lats & Upper Back',
       equipment: 'Cable Machine',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+      videoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/shoulder_press_form.mp4',
+      sideVideoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/push_up_form.mp4',
       tips: 'Lead with elbows and pull towards upper chest.',
     );
     const exRow = Exercise(
@@ -127,7 +177,8 @@ class WorkoutRepository {
       name: 'Seated Cable Row',
       targetMuscle: 'Mid-Back & Rhomboids',
       equipment: 'Cable Machine',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
+      videoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/curl_form.mp4',
+      sideVideoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/demo.mp4',
       tips: 'Retract shoulder blades and hold peak contraction 1s.',
     );
     const exCurl = Exercise(
@@ -135,7 +186,8 @@ class WorkoutRepository {
       name: 'Incline Dumbbell Biceps Curl',
       targetMuscle: 'Biceps Long Head',
       equipment: 'Dumbbells',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      videoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/curl_form.mp4',
+      sideVideoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/shoulder_press_form.mp4',
       tips: 'Keep elbows pinned behind torso for deep stretch.',
     );
     const exSquat = Exercise(
@@ -143,7 +195,8 @@ class WorkoutRepository {
       name: 'Barbell Back Squat',
       targetMuscle: 'Quadriceps & Glutes',
       equipment: 'Barbell',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+      videoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/squat_form.mp4',
+      sideVideoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/demo.mp4',
       tips: 'Break at hips and knees simultaneously. Depth below parallel.',
     );
     const exRdl = Exercise(
@@ -151,7 +204,8 @@ class WorkoutRepository {
       name: 'Romanian Deadlift',
       targetMuscle: 'Hamstrings & Glutes',
       equipment: 'Barbell',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+      videoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/squat_form.mp4',
+      sideVideoUrl: 'https://cdn.jsdelivr.net/gh/RiccardoRiccio/Fitness-AI-coach@main/demo.mp4',
       tips: 'Hinge back with hips, maintaining neutral spine.',
     );
 
@@ -199,9 +253,40 @@ class WorkoutRepository {
         title: 'Day 4: Shoulders & Core Surge',
         muscleGroups: ['Shoulders', 'Core'],
         exercises: [
-          WorkoutDayExercise(id: 'de-10', exercise: ex3, orderIndex: 1, targetSets: 3, targetRepsRange: '12-15', restSeconds: 45),
-          WorkoutDayExercise(id: 'de-11', exercise: ex4, orderIndex: 2, targetSets: 3, targetRepsRange: '12-15', restSeconds: 45),
+          WorkoutDayExercise(id: 'de-10', exercise: ex2, orderIndex: 1, targetSets: 4, targetRepsRange: '8-10', restSeconds: 60),
+          WorkoutDayExercise(id: 'de-11', exercise: ex1, orderIndex: 2, targetSets: 3, targetRepsRange: '12-15', restSeconds: 45),
         ],
+      ),
+      const WorkoutRoutineDay(
+        id: 'day-template-5',
+        routineId: 'routine-90-hypertrophy',
+        dayNumber: 5,
+        title: 'Day 5: Full Upper Body Pump',
+        muscleGroups: ['Chest', 'Shoulders', 'Arms'],
+        exercises: [
+          WorkoutDayExercise(id: 'de-12', exercise: ex1, orderIndex: 1, targetSets: 3, targetRepsRange: '10-12', restSeconds: 60),
+          WorkoutDayExercise(id: 'de-13', exercise: ex2, orderIndex: 2, targetSets: 3, targetRepsRange: '8-10', restSeconds: 60),
+          WorkoutDayExercise(id: 'de-14', exercise: ex3, orderIndex: 3, targetSets: 3, targetRepsRange: '10-12', restSeconds: 60),
+        ],
+      ),
+      const WorkoutRoutineDay(
+        id: 'day-template-6',
+        routineId: 'routine-90-hypertrophy',
+        dayNumber: 6,
+        title: 'Day 6: Lower Body Power',
+        muscleGroups: ['Legs', 'Calves'],
+        exercises: [
+          WorkoutDayExercise(id: 'de-15', exercise: exSquat, orderIndex: 1, targetSets: 4, targetRepsRange: '8-10', restSeconds: 75),
+        ],
+      ),
+      const WorkoutRoutineDay(
+        id: 'day-template-7',
+        routineId: 'routine-90-hypertrophy',
+        dayNumber: 7,
+        title: 'Day 7: Active Recovery & Mobility',
+        muscleGroups: ['Mobility'],
+        isRestDay: true,
+        exercises: [],
       ),
     ];
   }

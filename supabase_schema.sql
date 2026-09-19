@@ -482,6 +482,7 @@ CREATE TABLE IF NOT EXISTS exercises (
     equipment VARCHAR(100) NOT NULL, -- Barbell, Dumbbell, Machine, Cable, Bodyweight
     difficulty VARCHAR(50) DEFAULT 'intermediate',
     video_url TEXT, -- Vercel Blob / Supabase Storage PIP video link
+    side_video_url TEXT, -- Multi-angle form video (Side / Alternate camera)
     thumbnail_url TEXT,
     instructions JSONB DEFAULT '[]'::jsonb,
     tips TEXT,

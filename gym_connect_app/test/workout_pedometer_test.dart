@@ -99,7 +99,7 @@ void main() {
 
   group('StepTrackerService Tests', () {
     test('StepTrackerService correctly computes distance and calories', () {
-      const service = StepTrackerService();
+      final service = StepTrackerService();
 
       // 10,000 steps * 0.000762 km = 7.62 km
       expect(service.calculateDistance(10000), 7.62);
@@ -142,6 +142,15 @@ void main() {
       await sub.cancel();
       await streamController.close();
     });
+
+    test('StepTrackerService pauses and resumes tracking', () {
+      final service = StepTrackerService();
+      expect(service.isPaused, isFalse);
+      service.pauseTracking();
+      expect(service.isPaused, isTrue);
+      service.resumeTracking();
+      expect(service.isPaused, isFalse);
+    });
   });
 
   group('StepTrackerNotifier Live Hardware Tests', () {
@@ -163,6 +172,33 @@ void main() {
       expect(updatedData.distanceKm, 6.10); // 8000 * 0.000762 = 6.096 -> 6.10
       expect(updatedData.caloriesBurned, 320); // 8000 * 0.04 = 320
       expect(updatedData.isTrackingLive, isTrue);
+    });
+
+    test('StepTrackerNotifier pauseTracking, resumeTracking, and togglePauseResume update state', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(stepTrackerProvider.notifier);
+      notifier.updateSteps(5000, isLive: true);
+
+      expect(container.read(stepTrackerProvider).isPaused, isFalse);
+      expect(container.read(stepTrackerProvider).isTrackingLive, isTrue);
+
+      notifier.pauseTracking();
+      final paused = container.read(stepTrackerProvider);
+      expect(paused.isPaused, isTrue);
+      expect(paused.isTrackingLive, isFalse);
+      expect(paused.badgeText, 'TRACKING PAUSED');
+      expect(paused.steps, 5000);
+
+      notifier.resumeTracking();
+      final resumed = container.read(stepTrackerProvider);
+      expect(resumed.isPaused, isFalse);
+      expect(resumed.isTrackingLive, isTrue);
+      expect(resumed.badgeText, 'HEALTH CONNECT LIVE');
+
+      notifier.togglePauseResume();
+      expect(container.read(stepTrackerProvider).isPaused, isTrue);
     });
 
     test('StepTrackerNotifier updates immediately upon receiving first sensor event', () async {
@@ -371,6 +407,19 @@ void main() {
       expect(find.text('PIP SILENT AUTO-LOOP'), findsOneWidget);
       expect(find.text('SIDE VIEW'), findsOneWidget);
       expect(find.text(testExercise.tips), findsOneWidget);
+      expect(find.byIcon(Icons.fullscreen_rounded), findsOneWidget);
+
+      // Tap angle toggle button to switch to side view
+      await tester.tap(find.text('SIDE VIEW'));
+      await tester.pump();
+      expect(find.text('FRONT VIEW'), findsOneWidget);
+
+      // Tap fullscreen button to open FullscreenVideoDialog
+      await tester.tap(find.byIcon(Icons.fullscreen_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('CAMERA ANGLE'), findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
 
     testWidgets('SetTrackerTile increments weight and reps and toggles checkmark', (tester) async {
@@ -543,6 +592,32 @@ void main() {
 
       expect(find.text('9200 STEPS TODAY'), findsOneWidget);
       expect(find.text('HARDWARE LIVE'), findsOneWidget);
+    });
+
+    testWidgets('PedometerCard renders TRACKING PAUSED badge and triggers onTogglePause callback', (tester) async {
+      bool toggleTapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PedometerCard(
+              steps: 4500,
+              distanceKm: 3.42,
+              caloriesBurned: 180,
+              isPaused: true,
+              onTogglePause: () => toggleTapped = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('4500 STEPS TODAY'), findsOneWidget);
+      expect(find.text('TRACKING PAUSED'), findsOneWidget);
+      expect(find.textContaining('Tracking Paused'), findsOneWidget);
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+      await tester.pump();
+      expect(toggleTapped, isTrue);
     });
   });
 }

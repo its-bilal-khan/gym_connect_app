@@ -4,12 +4,15 @@ import '../../../../../core/theme/app_colors.dart';
 
 class StreakBadge extends StatelessWidget {
   final int streakDays;
+  final VoidCallback? onTap;
 
-  const StreakBadge({super.key, required this.streakDays});
+  const StreakBadge({super.key, required this.streakDays, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.primaryAccent.withValues(alpha: 0.15),
@@ -31,6 +34,7 @@ class StreakBadge extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

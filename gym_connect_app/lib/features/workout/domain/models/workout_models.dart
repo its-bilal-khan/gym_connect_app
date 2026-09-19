@@ -5,6 +5,7 @@ class Exercise {
   final String equipment;
   final String difficulty;
   final String? videoUrl;
+  final String? sideVideoUrl;
   final String? thumbnailUrl;
   final String tips;
   final List<String> instructions;
@@ -16,6 +17,7 @@ class Exercise {
     required this.equipment,
     this.difficulty = 'Intermediate',
     this.videoUrl,
+    this.sideVideoUrl,
     this.thumbnailUrl,
     this.tips = 'Maintain core tension and controlled eccentric tempo.',
     this.instructions = const [],
@@ -29,6 +31,7 @@ class Exercise {
       equipment: json['equipment'] as String? ?? 'Bodyweight',
       difficulty: json['difficulty'] as String? ?? 'Intermediate',
       videoUrl: json['video_url'] as String?,
+      sideVideoUrl: json['side_video_url'] as String?,
       thumbnailUrl: json['thumbnail_url'] as String?,
       tips: json['tips'] as String? ?? 'Keep controlled tempo.',
       instructions: (json['instructions'] as List<dynamic>?)

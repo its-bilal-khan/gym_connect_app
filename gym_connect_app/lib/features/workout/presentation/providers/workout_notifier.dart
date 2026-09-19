@@ -57,7 +57,7 @@ class WorkoutNotifier extends Notifier<WorkoutSessionState> {
 
   WorkoutRepository get _repo => ref.read(workoutRepositoryProvider);
 
-  Future<void> loadTodayRoutine({int day = 24}) async {
+  Future<void> loadTodayRoutine({int day = 1}) async {
     final routine = await _repo.getTodayRoutine(dayNumber: day);
     final map = <String, List<WorkoutSetRecord>>{};
 

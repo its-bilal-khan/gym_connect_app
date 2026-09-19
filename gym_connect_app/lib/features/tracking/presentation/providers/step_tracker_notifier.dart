@@ -9,6 +9,7 @@ class StepTrackingData {
   final int dailyGoal;
   final bool isTrackingLive;
   final bool isWaitingForSensor;
+  final bool isPaused;
   final String? sensorError;
   final bool isHealthConnectMissing;
   final String? badgeText;
@@ -20,6 +21,7 @@ class StepTrackingData {
     this.dailyGoal = 10000,
     this.isTrackingLive = false,
     this.isWaitingForSensor = true,
+    this.isPaused = false,
     this.sensorError,
     this.isHealthConnectMissing = false,
     this.badgeText,
@@ -32,6 +34,7 @@ class StepTrackingData {
     int? dailyGoal,
     bool? isTrackingLive,
     bool? isWaitingForSensor,
+    bool? isPaused,
     String? sensorError,
     bool? isHealthConnectMissing,
     String? badgeText,
@@ -43,6 +46,7 @@ class StepTrackingData {
       dailyGoal: dailyGoal ?? this.dailyGoal,
       isTrackingLive: isTrackingLive ?? this.isTrackingLive,
       isWaitingForSensor: isWaitingForSensor ?? this.isWaitingForSensor,
+      isPaused: isPaused ?? this.isPaused,
       sensorError: sensorError ?? this.sensorError,
       isHealthConnectMissing: isHealthConnectMissing ?? this.isHealthConnectMissing,
       badgeText: badgeText ?? this.badgeText,
@@ -138,7 +142,7 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
   }
 
   Future<void> _pollSteps() async {
-    if (!ref.mounted) return;
+    if (!ref.mounted || state.isPaused) return;
 
     if (!state.isTrackingLive) {
       final hasPerm = await _service.hasStepPermission();
@@ -241,6 +245,7 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
       dailyGoal: state.dailyGoal,
       isTrackingLive: isLive,
       isWaitingForSensor: isWaiting,
+      isPaused: state.isPaused,
       sensorError: null,
       isHealthConnectMissing: false,
       badgeText: badge ?? state.badgeText,
@@ -248,6 +253,36 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
 
     if (count > 0) {
       _service.saveLocalSteps(count).ignore();
+    }
+  }
+
+  void pauseTracking() {
+    _service.pauseTracking();
+    _subscription?.pause();
+    _pollingTimer?.cancel();
+    state = state.copyWith(
+      isPaused: true,
+      isTrackingLive: false,
+      badgeText: 'TRACKING PAUSED',
+    );
+  }
+
+  void resumeTracking() {
+    _service.resumeTracking();
+    _subscription?.resume();
+    state = state.copyWith(
+      isPaused: false,
+      isTrackingLive: true,
+      badgeText: 'HEALTH CONNECT LIVE',
+    );
+    _startPolling();
+  }
+
+  void togglePauseResume() {
+    if (state.isPaused) {
+      resumeTracking();
+    } else {
+      pauseTracking();
     }
   }
 }

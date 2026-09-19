@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../shared/widgets/primary_button.dart';
+import 'providers/gamification_provider.dart';
 import 'providers/workout_notifier.dart';
+import 'widgets/active_workout_app_bar.dart';
+import 'widgets/confetti_celebration_dialog.dart';
 import 'widgets/exercise_pip_player.dart';
 import 'widgets/exercise_tab_bar.dart';
 import 'widgets/rest_timer_overlay.dart';
@@ -27,8 +29,25 @@ class ActiveWorkoutScreen extends ConsumerWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.of(ctx).pop();
+              final session = ref.read(workoutNotifierProvider);
+              int totalSets = 0;
+              double totalVol = 0;
+              for (final sets in session.setsByExercise.values) {
+                for (final s in sets.where((item) => item.isCompleted)) {
+                  totalSets++;
+                  totalVol += (s.weightKg * s.actualReps);
+                }
+              }
               ref.read(workoutNotifierProvider.notifier).finishWorkout();
-              Navigator.of(context).pop();
+              ref.read(gamificationProvider.notifier).awardWorkoutCompletionPoints(points: 100);
+
+              ConfettiCelebrationDialog.show(
+                context,
+                totalSets: totalSets > 0 ? totalSets : 12,
+                totalVolumeKg: totalVol > 0 ? totalVol : 2850.0,
+                durationMinutes: 45,
+                onClose: () => Navigator.of(context).pop(),
+              );
             },
             child: const Text('COMPLETE'),
           ),
@@ -42,11 +61,7 @@ class ActiveWorkoutScreen extends ConsumerWidget {
     final session = ref.watch(workoutNotifierProvider);
     final routine = session.routineDay;
     if (routine == null || routine.exercises.isEmpty) {
-      return const Scaffold(
-        body: SafeArea(
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      );
+      return const Scaffold(body: SafeArea(child: Center(child: CircularProgressIndicator())));
     }
 
     final theme = Theme.of(context);
@@ -54,39 +69,13 @@ class ActiveWorkoutScreen extends ConsumerWidget {
     final bottomInset = MediaQuery.of(context).padding.bottom;
     final currentExercise = routine.exercises[session.activeExerciseIndex];
     final sets = session.setsByExercise[currentExercise.id] ?? [];
-    final progress = session.progressPercentage;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(routine.title.toUpperCase(), style: GoogleFonts.oswald(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-            Text('${(progress * 100).toInt()}% WORKOUT COMPLETE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: accent)),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: PrimaryButton(
-              text: 'FINISH',
-              icon: Icons.flag_rounded,
-              onPressed: () => _confirmFinish(context, ref),
-            ),
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(4),
-          child: LinearProgressIndicator(
-            value: progress,
-            backgroundColor: AppColors.border,
-            valueColor: AlwaysStoppedAnimation<Color>(accent),
-            minHeight: 4,
-          ),
-        ),
+      appBar: ActiveWorkoutAppBar(
+        title: routine.title,
+        progress: session.progressPercentage,
+        onFinish: () => _confirmFinish(context, ref),
       ),
       body: SafeArea(
         bottom: false,

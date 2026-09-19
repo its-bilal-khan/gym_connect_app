@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/workout_models.dart';
+import 'fullscreen_video_dialog.dart';
+import 'pip_player_overlay.dart';
 
 class ExercisePipPlayer extends StatefulWidget {
   final Exercise exercise;
@@ -13,6 +15,8 @@ class ExercisePipPlayer extends StatefulWidget {
 }
 
 class _ExercisePipPlayerState extends State<ExercisePipPlayer> {
+  static const String _fallbackUrl =
+      'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4';
   VideoPlayerController? _controller;
   bool _isLoading = true;
   bool _hasError = false;
@@ -27,19 +31,34 @@ class _ExercisePipPlayerState extends State<ExercisePipPlayer> {
   @override
   void didUpdateWidget(ExercisePipPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.exercise.videoUrl != widget.exercise.videoUrl) {
-      _disposeController();
+    if (oldWidget.exercise.id != widget.exercise.id ||
+        oldWidget.exercise.videoUrl != widget.exercise.videoUrl ||
+        oldWidget.exercise.sideVideoUrl != widget.exercise.sideVideoUrl) {
       _initVideo();
     }
   }
 
+  String get _activeUrl => (_isFrontAngle ? widget.exercise.videoUrl : widget.exercise.sideVideoUrl) ?? widget.exercise.videoUrl ?? '';
+
+  void _toggleAngle() {
+    setState(() => _isFrontAngle = !_isFrontAngle);
+    _initVideo();
+  }
+
   Future<void> _initVideo() async {
-    final url = widget.exercise.videoUrl;
-    if (url == null || url.isEmpty) {
+    _disposeController();
+    final primary = _activeUrl;
+    if (primary.isEmpty) {
       if (mounted) setState(() { _isLoading = false; _hasError = true; });
       return;
     }
-    setState(() { _isLoading = true; _hasError = false; });
+    if (mounted) setState(() { _isLoading = true; _hasError = false; });
+    bool ok = await _tryLoadVideo(primary);
+    if (!ok && primary != _fallbackUrl) ok = await _tryLoadVideo(_fallbackUrl);
+    if (mounted) setState(() { _isLoading = false; _hasError = !ok; });
+  }
+
+  Future<bool> _tryLoadVideo(String url) async {
     try {
       final ctrl = VideoPlayerController.networkUrl(Uri.parse(url));
       _controller = ctrl;
@@ -47,9 +66,15 @@ class _ExercisePipPlayerState extends State<ExercisePipPlayer> {
       await ctrl.setLooping(true);
       await ctrl.setVolume(0.0);
       await ctrl.play();
-      if (mounted) setState(() => _isLoading = false);
+      ctrl.addListener(() {
+        if (ctrl.value.hasError && mounted && !_hasError) {
+          setState(() { _isLoading = false; _hasError = true; });
+        }
+      });
+      return true;
     } catch (_) {
-      if (mounted) setState(() { _isLoading = false; _hasError = true; });
+      _disposeController();
+      return false;
     }
   }
 
@@ -67,7 +92,6 @@ class _ExercisePipPlayerState extends State<ExercisePipPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
     final ctrl = _controller;
     final isReady = !_isLoading && !_hasError && ctrl != null && ctrl.value.isInitialized;
 
@@ -95,60 +119,12 @@ class _ExercisePipPlayerState extends State<ExercisePipPlayer> {
                         child: SizedBox(width: ctrl.value.size.width, height: ctrl.value.size.height, child: VideoPlayer(ctrl)),
                       ),
                     )
-                  else if (_isLoading)
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2.5, color: accent)),
-                        const SizedBox(height: 10),
-                        Text('STREAMING EXERCISE FORM...', style: GoogleFonts.oswald(fontSize: 12, letterSpacing: 1.0, color: Colors.white70)),
-                      ],
-                    )
                   else
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.fitness_center_rounded, color: AppColors.textSecondary, size: 36),
-                        const SizedBox(height: 6),
-                        Text('VISUAL POSTURE CHECKPOINT', style: GoogleFonts.oswald(fontSize: 13, letterSpacing: 1.0, color: Colors.white70)),
-                        TextButton(onPressed: _initVideo, child: Text('RETRY STREAM', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: accent))),
-                      ],
-                    ),
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.75), borderRadius: BorderRadius.circular(8), border: Border.all(color: accent.withValues(alpha: 0.5))),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.repeat_rounded, color: AppColors.primaryAccent, size: 12),
-                          const SizedBox(width: 4),
-                          Text('PIP SILENT AUTO-LOOP', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: InkWell(
-                      onTap: () => setState(() => _isFrontAngle = !_isFrontAngle),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.75), borderRadius: BorderRadius.circular(8)),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.videocam_rounded, color: Colors.white, size: 12),
-                            const SizedBox(width: 4),
-                            Text(_isFrontAngle ? 'SIDE VIEW' : 'FRONT VIEW', style: GoogleFonts.inter(fontSize: 10, color: Colors.white)),
-                          ],
-                        ),
-                      ),
-                    ),
+                    PipStatusPlaceholder(isLoading: _isLoading, onRetry: _initVideo),
+                  PipPlayerOverlay(
+                    isFrontAngle: _isFrontAngle,
+                    onToggleAngle: _toggleAngle,
+                    onExpand: () => FullscreenVideoDialog.show(context, widget.exercise, isFrontAngle: _isFrontAngle),
                   ),
                 ],
               ),

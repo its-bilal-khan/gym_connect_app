@@ -38,7 +38,12 @@ class StepTrackerService {
   static const List<HealthDataAccess> stepPermissions = [HealthDataAccess.READ];
   static const MethodChannel _settingsChannel = MethodChannel('com.example.gym_connect_app/health_settings');
 
-  const StepTrackerService([
+  bool _isPaused = false;
+  bool get isPaused => _isPaused;
+  void pauseTracking() => _isPaused = true;
+  void resumeTracking() => _isPaused = false;
+
+  StepTrackerService([
     this._storage,
     this._supabase,
     this._mockStream,
@@ -185,6 +190,7 @@ class StepTrackerService {
   }
 
   Future<int?> fetchDailySteps() async {
+    if (_isPaused) return null;
     final now = DateTime.now();
     final midnight = DateTime(now.year, now.month, now.day);
 
@@ -220,6 +226,7 @@ class StepTrackerService {
     }
 
     return Stream.periodic(const Duration(seconds: 3))
+        .where((_) => !_isPaused)
         .asyncMap((_) => fetchDailySteps())
         .where((steps) => steps != null)
         .map((steps) => steps!)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../../core/theme/app_colors.dart';
 
@@ -6,12 +7,9 @@ class PedometerCard extends StatelessWidget {
   final int steps;
   final double distanceKm;
   final int caloriesBurned;
-  final bool isLive;
-  final bool isWaiting;
-  final String? errorMessage;
-  final String? badgeText;
-  final bool isHealthConnectMissing;
-  final VoidCallback? onTap;
+  final bool isLive, isWaiting, isPaused, isHealthConnectMissing;
+  final String? errorMessage, badgeText;
+  final VoidCallback? onTap, onTogglePause;
 
   const PedometerCard({
     super.key,
@@ -20,19 +18,23 @@ class PedometerCard extends StatelessWidget {
     this.caloriesBurned = 0,
     this.isLive = false,
     this.isWaiting = false,
+    this.isPaused = false,
     this.errorMessage,
     this.badgeText,
     this.isHealthConnectMissing = false,
     this.onTap,
+    this.onTogglePause,
   });
 
   @override
   Widget build(BuildContext context) {
-    final showWaiting = (isWaiting || (!isLive && steps == 0) || errorMessage != null) && !isHealthConnectMissing;
+    final showWaiting = (isWaiting || (!isLive && steps == 0) || errorMessage != null) && !isHealthConnectMissing && !isPaused;
     final titleText = steps == 0 ? '0 steps' : '$steps STEPS TODAY';
 
     final String subtitleText;
-    if (isHealthConnectMissing) {
+    if (isPaused) {
+      subtitleText = '$distanceKm km • $caloriesBurned kcal • Tracking Paused';
+    } else if (isHealthConnectMissing) {
       subtitleText = 'Health Connect required • Tap to install';
     } else if (errorMessage != null && (badgeText == 'OPEN SETTINGS' || badgeText == 'PERMISSION NEEDED')) {
       subtitleText = errorMessage!;
@@ -44,7 +46,10 @@ class PedometerCard extends StatelessWidget {
 
     final String effectiveBadge;
     final Color badgeColor;
-    if (badgeText != null) {
+    if (isPaused) {
+      effectiveBadge = 'TRACKING PAUSED';
+      badgeColor = Colors.amber;
+    } else if (badgeText != null) {
       effectiveBadge = badgeText!;
       badgeColor = isLive ? AppColors.primaryAccent : Colors.orange;
     } else if (isHealthConnectMissing) {
@@ -72,7 +77,7 @@ class PedometerCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.directions_walk_rounded, color: AppColors.primaryAccent, size: 30),
+              Icon(Icons.directions_walk_rounded, color: isPaused ? Colors.amber : AppColors.primaryAccent, size: 30),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -83,32 +88,52 @@ class PedometerCard extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 4,
                       children: [
-                        Text(
-                          titleText,
-                          style: GoogleFonts.oswald(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                        ),
+                        Text(titleText, style: GoogleFonts.oswald(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: badgeColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            effectiveBadge,
-                            style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: badgeColor),
+                          decoration: BoxDecoration(color: badgeColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isLive && !isPaused) ...[
+                                Container(
+                                  width: 5, height: 5,
+                                  decoration: BoxDecoration(shape: BoxShape.circle, color: badgeColor, boxShadow: [BoxShadow(color: badgeColor, blurRadius: 4)]),
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              Text(effectiveBadge, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: badgeColor)),
+                            ],
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      subtitleText,
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
-                    ),
+                    Text(subtitleText, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
                   ],
                 ),
               ),
-              if (onTap != null)
+              if (onTogglePause != null)
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onTogglePause!();
+                  },
+                  child: Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: isPaused ? AppColors.primaryAccent.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: isPaused ? AppColors.primaryAccent : AppColors.border),
+                    ),
+                    child: Icon(
+                      isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                      color: isPaused ? AppColors.primaryAccent : Colors.amber,
+                      size: 20,
+                    ),
+                  ),
+                )
+              else if (onTap != null)
                 const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 20),
             ],
           ),
