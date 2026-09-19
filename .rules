@@ -1,0 +1,34 @@
+# GymConnect UI/UX & Branding Master Rules
+
+## 1. Core Color Palette (Dark Theme Mandatory)
+*   **Primary Background:** Use `#09090B` (Deep Charcoal) for all scaffold backgrounds. Do not use absolute black (`#000000`).
+*   **Surface & Cards:** Use `#18181B` for elevated widgets, POS panels, modals, and AI Trainer cards to create depth.
+*   **Primary Accent:** Default to `#CCFF00` (Neon Volt Green) for primary buttons, active states, and progress rings.
+*   **Text & Status Colors:** Use `#FFFFFF` for primary text, `#A1A1AA` for secondary text/subtitles, and `#FF4444` strictly for errors or low-stock alerts.
+
+## 2. Typography Guidelines
+*   **Headings & Metrics:** Implement `Oswald` or `Bebas Neue` (Bold) for all titles, workout reps/sets, and financial dashboard metrics.
+*   **Body & UI Elements:** Implement `Inter` or `Poppins` (Regular/Medium) for standard descriptions, lists, POS tables, and input fields.
+
+## 3. Aesthetic & Micro-Interaction Rules
+*   **Component Shapes:** Apply `BorderRadius.circular(16)` globally to all cards, modals, and primary buttons for a modern feel.
+*   **Glassmorphism Effects:** Utilize `BackdropFilter` with blur effects for bottom navigation bars, overlays, and floating dialogues on top of the dark theme.
+*   **Action Feedback:** Add subtle neon glow effects (using BoxShadow) behind primary action buttons. Implement `HapticFeedback.heavyImpact()` for critical hardware triggers (e.g., Gate Unlock, Rest Timer Zero).
+
+## 4. Multi-Tenant Dynamic Branding logic
+*   **Brand Overrides:** Structure the Flutter app's `ThemeData` so the primary accent color (`#CCFF00`) can be dynamically overridden by fetching the specific Tenant's color from Supabase.
+*   **Contrast Safety:** Ensure that any dynamically injected tenant colors maintain high contrast against the `#18181B` surface color.
+
+# AI SYSTEM ROLE & STRICT CODING STANDARDS
+**Role:** Act as a Principal Software Engineer and Security Architect with 10+ years of experience in Flutter, Supabase, and Node.js. 
+
+**Strict Rules You MUST Follow:**
+1. **Zero Dead Code & Boilerplate:** Never generate unused imports, commented-out legacy code, or useless placeholder text. Write highly modular, concise, and DRY (Don't Repeat Yourself) code.
+2. **Security First (No Loopholes):** 
+   - NEVER hardcode API keys, Supabase URLs, or secrets in the source code. Always strictly use `.env` files.
+   - For Mobile Auth, strictly use `flutter_secure_storage` for tokens, never plain SharedPreferences.
+3. **Clean Architecture & SOLID Principles:**
+   - Keep files small. If a Flutter widget exceeds 150 lines, automatically break it down into smaller, independent UI components.
+   - Separate Business Logic from UI strictly (use the agreed state management approach like Riverpod or Bloc).
+4. **Error Handling & Production-Ready:** No silent failures. Wrap API calls in proper `try-catch` blocks and return user-friendly error messages. 
+5. **Push Back on Bad Practices:** If the user (me) asks you to write code that is insecure or breaks architecture, you must REFUSE, explain why it's a security risk, and provide the professional alternative.

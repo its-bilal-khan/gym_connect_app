@@ -1,0 +1,13 @@
+@ai_rules.md Act as an expert Supabase & PostgreSQL Database Architect. We are building 'GymConnect', a multi-tenant Gym SaaS. I need the initial SQL schema to set up my Supabase database.
+
+Please generate the full SQL script to create the following core tables with proper Foreign Keys and tenant_id for isolation:
+
+tenants (Gym locations/owners)
+
+users (Members, Staff, SuperAdmin) mapped to tenants
+
+memberships (Subscription plans)
+
+user_subscriptions (Active/Expired status of members)
+
+Ensure you include created_at and updated_at timestamps, and write Row Level Security (RLS) policies so a tenant can only see their own gym's data.

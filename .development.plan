@@ -1,0 +1,70 @@
+GymConnect Ultimate Master Blueprint — Complete Phased Roadmap
+Phase 1: Cloud Backend & Foundation
+Multi-Tenant Architecture: Supabase database configuration with Tenant IDs for complete gym isolation.
+
+Security Policies: Row-Level Security (RLS) enforcement.
+
+Spatial & Tracking Extensions: PostGIS Extension setup for GPS location matching and nearby gym discovery.
+
+Audit Watchdog: Immutable system audit logs to track all database operations (CRUD).
+
+Phase 2: Mobile App Shell, Auth & Role-Switching Engine
+Role-Switching Engine: Automatic user role detection (Owner, Staff, Member, Public) upon login.
+
+Persistent Sessions: Secure local token storage for seamless app restarts (Auth Gate).
+
+Responsive Mobile Shell: Adaptive navigation setup across different views.
+
+Phase 3: Member Portal & Virtual AI Trainer (The Core USP)
+Goal Onboarding & Calendar: Visual body type UI cards and 90-day smart auto-loading workout calendars.
+
+Zero-Friction UX: "One-Tap" daily action buttons and haptic feedback/vibration loops.
+
+PIP Video Integration: Silent, looping exercise form video auto-play.
+
+Live Pedometer & Tracking: Native Flutter background step counting, distance (km), and calorie burn estimation.
+
+Gamification: 7-day streak badges, PR confetti animations, and leaderboards.
+
+Phase 4: Staff Dashboard & POS Module
+Front-Desk Operations: Member registration, fee collection, and attendance check-ins.
+
+Hardware Intersections: Thermal receipt printer, cash drawer auto-kick, and barcode scanner integration.
+
+Advanced Billing: Walk-in fees, split payments (Cash + Card), and "Khata System" for credit (udhaar) tracking.
+
+Inventory Management: Low-stock alerts for supplements and gear.
+
+Phase 5: Desktop App (Electron.js) & Hardware Gate Control
+Local POS Database: SQLite integration for offline-first reception operations and background syncing.
+
+Gate Display Screen: 10-second dynamic QR code generator for visitor/member entry.
+
+Hardware Trigger: Local API signal transmission to ESP32 Wi-Fi relay modules to open magnetic gate locks.
+
+Shift Reporting: Z-Reports (End of Day Tally), defaulters lists, and petty cash trackers.
+
+Phase 6: Gym Owner & Super Admin Mothership Panels
+Owner Security & Live Ops: Biometric app lock (FaceID/Fingerprint) and RTSP live security camera feed streaming.
+
+Anti-Theft Engine: Real-time push alerts for voided or deleted invoices by staff.
+
+Super Admin Control: Global SaaS revenue metrics, tenant suspension tools, and global audit log viewers.
+
+God Mode: Secure impersonation engine allowing direct login as any owner, staff, or member for troubleshooting.
+
+Phase 7: Public Marketplace & E-Commerce Store
+Discovery UX: Airbnb-style map view with swipeable gym interior cards, real-time distance, and ETA.
+
+Frictionless Conversion: Instant 24-hour temporary guest pass claims and direct online membership purchases.
+
+In-App Store: Supplement and gear ordering for in-gym pickup.
+
+Trust Engine: Verified-only ratings and reviews, alongside a locked AI trainer preview for public FOMO.
+
+Phase 8: Cloud Automation, Hosting & Deployment
+Edge Functions & Webhooks: Automated payment listeners, subscription expiry lockouts, and WhatsApp/SMS notification triggers.
+
+Media Storage: Vercel Blob hosting integration for exercise demonstration videos and product images.
+
+Publishing & CI/CD: Google Play Store, Apple App Store deployments, and Windows .exe desktop installer generation.
