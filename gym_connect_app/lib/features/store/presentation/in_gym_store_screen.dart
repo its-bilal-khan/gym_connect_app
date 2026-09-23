@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../auth/domain/models/user_role.dart';
+import '../../auth/presentation/providers/auth_notifier.dart';
+import '../../auth/presentation/providers/auth_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/store_repository.dart';
-import 'product_detail_screen.dart';
+import 'providers/store_providers.dart';
+import 'screens/order_tracking_screen.dart';
+import 'screens/store_checkout_screen.dart';
+import 'widgets/add_product_dialog.dart';
 import 'widgets/store_cart_sheet.dart';
-import 'widgets/store_product_card.dart';
+import 'widgets/store_catalog_view.dart';
 
 class InGymStoreScreen extends ConsumerStatefulWidget {
   const InGymStoreScreen({super.key});
@@ -37,20 +42,26 @@ class _InGymStoreScreenState extends ConsumerState<InGymStoreScreen> {
     return total;
   }
 
-  void _openCart(List<StoreProduct> products) {
-    StoreCartSheet.show(
+  void _openCheckout(List<StoreProduct> products) {
+    StoreCheckoutScreen.open(
       context,
       cart: _cart,
       allProducts: products,
       totalAmount: _calculateTotal(products),
-      onClearCart: () => setState(() => _cart.clear()),
+      onOrderPlaced: () => setState(() => _cart.clear()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final productsAsync = ref.watch(storeProductsProvider);
+    final viewMode = ref.watch(storeViewModeProvider);
+    final isGrid = viewMode == StoreViewMode.grid;
     final accent = Theme.of(context).colorScheme.primary;
+
+    final authState = ref.watch(authNotifierProvider);
+    final isOwnerOrStaff = (authState is AuthAuthenticated) &&
+        (authState.activeRole == UserRole.owner || authState.activeRole == UserRole.staff);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -61,8 +72,24 @@ class _InGymStoreScreenState extends ConsumerState<InGymStoreScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('IN-GYM STORE & SHAKES', style: GoogleFonts.oswald(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+        title: Text('PRO STORE & SHAKES', style: GoogleFonts.oswald(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
         actions: [
+          if (isOwnerOrStaff)
+            IconButton(
+              tooltip: 'Add New Product',
+              icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),
+              onPressed: () => AddProductDialog.show(context),
+            ),
+          IconButton(
+            tooltip: isGrid ? 'Switch to List View' : 'Switch to Grid View',
+            icon: Icon(isGrid ? Icons.view_list_rounded : Icons.grid_view_rounded, color: AppColors.primary),
+            onPressed: () => ref.read(storeViewModeProvider.notifier).toggle(),
+          ),
+          IconButton(
+            tooltip: 'Track My Orders',
+            icon: const Icon(Icons.local_shipping_outlined, color: AppColors.textPrimary),
+            onPressed: () => OrderTrackingScreen.open(context),
+          ),
           productsAsync.maybeWhen(
             data: (products) {
               final count = _cart.values.fold<int>(0, (sum, q) => sum + q);
@@ -71,7 +98,7 @@ class _InGymStoreScreenState extends ConsumerState<InGymStoreScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.shopping_cart_rounded, color: AppColors.textPrimary),
-                    onPressed: count > 0 ? () => _openCart(products) : null,
+                    onPressed: count > 0 ? () => _openCartSheet(products) : null,
                   ),
                   if (count > 0)
                     Positioned(
@@ -91,9 +118,19 @@ class _InGymStoreScreenState extends ConsumerState<InGymStoreScreen> {
         ],
       ),
       body: productsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (err, _) => Center(child: Text('Error loading store: $err', style: const TextStyle(color: Colors.redAccent))),
-        data: (products) => _buildCatalog(products, accent),
+        data: (products) => StoreCatalogView(
+          products: products,
+          isGridView: isGrid,
+          cart: _cart,
+          searchQuery: _searchQuery,
+          selectedCategory: _selectedCategory,
+          categories: _categories,
+          onSearchChanged: (val) => setState(() => _searchQuery = val.trim()),
+          onCategoryChanged: (cat) => setState(() => _selectedCategory = cat),
+          onAddToCart: (id, current) => setState(() => _cart[id] = current + 1),
+        ),
       ),
       bottomNavigationBar: productsAsync.maybeWhen(
         data: (products) {
@@ -105,7 +142,7 @@ class _InGymStoreScreenState extends ConsumerState<InGymStoreScreen> {
             decoration: const BoxDecoration(color: AppColors.surface, border: Border(top: BorderSide(color: AppColors.border))),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: accent, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              onPressed: () => _openCart(products),
+              onPressed: () => _openCheckout(products),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -121,67 +158,13 @@ class _InGymStoreScreenState extends ConsumerState<InGymStoreScreen> {
     );
   }
 
-  Widget _buildCatalog(List<StoreProduct> products, Color accent) {
-    final filtered = products.where((p) {
-      final matchesCat = _selectedCategory == 'All' || p.category.toLowerCase() == _selectedCategory.toLowerCase();
-      final matchesSearch = _searchQuery.isEmpty || p.name.toLowerCase().contains(_searchQuery.toLowerCase()) || p.providerBrand.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesCat && matchesSearch;
-    }).toList();
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: TextField(
-            onChanged: (val) => setState(() => _searchQuery = val.trim()),
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary),
-            decoration: InputDecoration(
-              hintText: 'Search supplements, shakes, gear...',
-              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
-              filled: true,
-              fillColor: AppColors.surface,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-            ),
-          ),
-        ),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: _categories.map((c) => Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: ChoiceChip(
-                label: Text(c, style: GoogleFonts.inter(fontSize: 11, color: _selectedCategory == c ? Colors.black : AppColors.textPrimary)),
-                selected: _selectedCategory == c,
-                selectedColor: accent,
-                backgroundColor: AppColors.surface,
-                onSelected: (val) => setState(() => _selectedCategory = c),
-              ),
-            )).toList(),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: filtered.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, i) {
-              final p = filtered[i];
-              final inCart = _cart[p.id] ?? 0;
-              return StoreProductCard(
-                product: p,
-                inCart: inCart,
-                onTap: () => ProductDetailScreen.open(context, product: p, onAddToCart: (q) => setState(() => _cart[p.id] = inCart + q)),
-                onAddToCart: () {
-                  HapticFeedback.lightImpact();
-                  setState(() => _cart[p.id] = inCart + 1);
-                },
-              );
-            },
-          ),
-        ),
-      ],
+  void _openCartSheet(List<StoreProduct> products) {
+    StoreCartSheet.show(
+      context,
+      cart: _cart,
+      allProducts: products,
+      totalAmount: _calculateTotal(products),
+      onClearCart: () => setState(() => _cart.clear()),
     );
   }
 }

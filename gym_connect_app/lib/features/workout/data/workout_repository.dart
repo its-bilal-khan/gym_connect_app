@@ -26,6 +26,7 @@ class WorkoutRepository {
             .from('workout_routine_days')
             .select('*, workout_day_exercises(*, exercises(*))')
             .eq('day_number', dayNumber)
+            .limit(1)
             .maybeSingle();
 
         if (data != null && data['workout_day_exercises'] != null) {

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../auth/domain/models/user_profile.dart';
 import '../../../../shared/widgets/primary_button.dart';
+import '../../../auth/domain/models/user_profile.dart';
+import '../../../store/presentation/in_gym_store_screen.dart';
 
 class PublicShellView extends StatelessWidget {
   final UserProfile profile;
@@ -74,6 +75,40 @@ class PublicShellView extends StatelessWidget {
                   const SizedBox(height: 12),
                   PrimaryButton(text: 'CLAIM FREE 24-HOUR PASS', icon: Icons.confirmation_number_rounded, onPressed: () {}),
                 ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            InkWell(
+              onTap: () => InGymStoreScreen.open(context),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                      radius: 22,
+                      child: const Icon(Icons.shopping_bag_rounded, color: AppColors.primary, size: 24),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('IN-GYM & ONLINE PRO SHOP', style: GoogleFonts.oswald(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                          const SizedBox(height: 2),
+                          Text('Authentic supplements, shakes & gym gear. Pickup or Home Delivery!', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white70),
+                  ],
+                ),
               ),
             ),
             SizedBox(height: 110 + bottomInset),

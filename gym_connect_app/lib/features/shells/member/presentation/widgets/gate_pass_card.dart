@@ -88,7 +88,14 @@ class _GatePassCardState extends State<GatePassCard> {
     await Future.delayed(const Duration(milliseconds: 1000));
     if (!mounted) return;
 
-    setState(() => _isUnlocking = false);
+    setState(() {
+      _isUnlocking = false;
+      // Anti-Passback & Security Protection: Auto-disconnect shake after successful entry
+      if (isShakeTrigger) {
+        _shakeEnabled = false;
+        _accelSub?.cancel();
+      }
+    });
     HapticFeedback.mediumImpact();
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -102,7 +109,9 @@ class _GatePassCardState extends State<GatePassCard> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                isShakeTrigger ? '⚡ Shake Detected: Magnetic Gate Unlocked (5s)' : 'ESP32 Gate Signal Sent: Magnetic Lock Released (5s)',
+                isShakeTrigger
+                    ? '⚡ Gate Unlocked (5s) • Shake Auto-Disabled (Anti-Passback)'
+                    : 'ESP32 Gate Signal Sent: Magnetic Lock Released (5s)',
                 style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),

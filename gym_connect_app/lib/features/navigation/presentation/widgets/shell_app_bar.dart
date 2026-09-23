@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../auth/domain/models/user_profile.dart';
 import '../../../auth/domain/models/user_role.dart';
 import '../../../notifications/data/notification_repository.dart';
+import '../../../store/presentation/in_gym_store_screen.dart';
 import 'role_switcher_sheet.dart';
 import 'user_account_hub_sheet.dart';
 
@@ -87,11 +88,30 @@ class ShellAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 ],
               ),
             ),
+            _buildStoreButton(context, accent),
+            const SizedBox(width: 8),
             _buildRoleBadge(context, accent),
             const SizedBox(width: 8),
             _buildProfileAvatarPill(context, accent, initials, unread),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStoreButton(BuildContext context, Color accent) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: IconButton(
+        icon: Icon(Icons.shopping_bag_outlined, color: accent, size: 20),
+        tooltip: 'Pro Shop & Store',
+        padding: const EdgeInsets.all(8),
+        constraints: const BoxConstraints(),
+        onPressed: () => InGymStoreScreen.open(context),
       ),
     );
   }

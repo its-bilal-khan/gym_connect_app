@@ -34,24 +34,37 @@ class StoreProductCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 70,
+                height: 70,
                 color: AppColors.background,
-                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  product.effectiveImageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return const Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)));
+                  },
+                  errorBuilder: (_, _, _) => const Center(
+                    child: Icon(Icons.fitness_center_rounded, color: AppColors.textSecondary, size: 28),
+                  ),
+                ),
               ),
-              child: Icon(Icons.inventory_2_rounded, color: accent, size: 28),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     product.providerBrand,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: accent),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     product.name,
                     maxLines: 1,
@@ -65,7 +78,7 @@ class StoreProductCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'PKR ${product.price.toInt()}',
-                    style: GoogleFonts.oswald(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryAccent),
+                    style: GoogleFonts.oswald(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.primary),
                   ),
                 ],
               ),
@@ -74,6 +87,7 @@ class StoreProductCard extends StatelessWidget {
               icon: Icon(
                 inCart > 0 ? Icons.check_circle_rounded : Icons.add_circle_rounded,
                 color: inCart > 0 ? Colors.greenAccent : accent,
+                size: 26,
               ),
               onPressed: onAddToCart,
             ),
