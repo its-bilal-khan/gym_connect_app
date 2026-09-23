@@ -5,11 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/primary_button.dart';
-import '../../domain/services/bmi_calorie_engine.dart';
 import '../providers/workout_notifier.dart';
 import 'body_type_selector_list.dart';
 import 'calorie_calculator_sheet.dart';
-import 'fitness_metrics_row.dart';
 import 'protocol_switch_dialog.dart';
 
 class GoalOnboardingDialog extends ConsumerStatefulWidget {
@@ -33,13 +31,7 @@ class _GoalOnboardingDialogState extends ConsumerState<GoalOnboardingDialog> {
   String _selectedBodyType = 'mesomorph';
   final String _initialBodyType = 'mesomorph';
   final String _selectedGoal = 'muscle_gain';
-  Gender _gender = Gender.male;
-  double _ageYears = 24.0, _heightCm = 175.0, _currentWeightKg = 74.0, _targetWeightKg = 80.0;
   bool _isSaving = false;
-
-  NutritionCalculationResult get _nutri => BmiCalorieEngine.calculate(
-    weightKg: _currentWeightKg, heightCm: _heightCm, ageYears: _ageYears.toInt(), gender: _gender, goal: _selectedGoal,
-  );
 
   void _onSaveTapped() {
     if (_selectedBodyType != _initialBodyType) {
@@ -52,7 +44,6 @@ class _GoalOnboardingDialogState extends ConsumerState<GoalOnboardingDialog> {
   Future<void> _persistGoal() async {
     HapticFeedback.mediumImpact();
     setState(() => _isSaving = true);
-    final nutri = _nutri;
     try {
       final client = Supabase.instance.client;
       final userId = client.auth.currentUser?.id;
@@ -61,16 +52,6 @@ class _GoalOnboardingDialogState extends ConsumerState<GoalOnboardingDialog> {
           'user_id': userId,
           'body_type': _selectedBodyType,
           'fitness_goal': _selectedGoal,
-          'height_cm': _heightCm,
-          'current_weight_kg': _currentWeightKg,
-          'target_weight_kg': _targetWeightKg,
-          'ai_recommendations': {
-            'age': _ageYears.toInt(), 'gender': _gender.name,
-            'bmi': nutri.bmi, 'bmi_category': nutri.bmiCategory,
-            'target_calories': nutri.targetCalories,
-            'target_protein_g': nutri.proteinGrams,
-            'target_water_liters': nutri.waterLiters,
-          },
           'updated_at': DateTime.now().toIso8601String(),
         });
       }
@@ -91,54 +72,66 @@ class _GoalOnboardingDialogState extends ConsumerState<GoalOnboardingDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final nutri = _nutri;
-    final accent = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
 
     return SafeArea(
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.90,
+        height: MediaQuery.of(context).size.height * 0.85,
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(height: 10),
-            Text('GENETICS & TARGET PHYSIQUE', style: GoogleFonts.oswald(fontSize: 19, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-            Text('Select natural build and calibrate nutrition fuel targets.', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
-            const SizedBox(height: 10),
-            FitnessMetricsRow(
-              gender: _gender, age: _ageYears, height: _heightCm, currentWeight: _currentWeightKg, targetWeight: _targetWeightKg,
-              onGenderChanged: (v) => setState(() => _gender = v),
-              onAgeChanged: (v) => setState(() => _ageYears = v),
-              onHeightChanged: (v) => setState(() => _heightCm = v),
-              onCurrentWeightChanged: (v) => setState(() => _currentWeightKg = v),
-              onTargetWeightChanged: (v) => setState(() => _targetWeightKg = v),
+            const SizedBox(height: 12),
+            Text('GENETICS & TARGET PHYSIQUE', style: GoogleFonts.oswald(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            Text('Choose your natural genetics foundation to tune AI workout routines.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
+            const SizedBox(height: 14),
+            InkWell(
+              onTap: () => CalorieCalculatorSheet.show(context),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: accent.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: accent.withValues(alpha: 0.15), shape: BoxShape.circle),
+                      child: Icon(Icons.calculate_rounded, color: accent, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('CALCULATE DAILY CALORIES & MACROS', style: GoogleFonts.oswald(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                          Text('Tune BMR, TDEE, protein & hydration targets', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios_rounded, color: accent, size: 14),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 8),
-            _macroPill(nutri, accent),
-            const SizedBox(height: 8),
-            Expanded(child: BodyTypeSelectorList(selectedBodyType: _selectedBodyType, onSelect: (b) => setState(() => _selectedBodyType = b))),
-            const SizedBox(height: 10),
-            PrimaryButton(text: _isSaving ? 'CALIBRATING...' : 'SAVE & TUNE AI TRAINER', icon: Icons.auto_awesome_rounded, onPressed: _isSaving ? null : _onSaveTapped),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _macroPill(NutritionCalculationResult n, Color accent) {
-    return GestureDetector(
-      onTap: () => CalorieCalculatorSheet.show(context, weight: _currentWeightKg, height: _heightCm, age: _ageYears.toInt(), gender: _gender, goal: _selectedGoal),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.border)),
-        child: Row(
-          children: [
-            Icon(Icons.bolt_rounded, size: 14, color: accent),
-            const SizedBox(width: 6),
-            Expanded(child: Text('BMI ${n.bmi} • ${n.targetCalories} kcal • ${n.proteinGrams}g Protein', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textPrimary))),
-            Text('CALCULATOR', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: accent)),
-            Icon(Icons.chevron_right_rounded, size: 14, color: accent),
+            const SizedBox(height: 14),
+            Expanded(
+              child: BodyTypeSelectorList(
+                selectedBodyType: _selectedBodyType,
+                onSelect: (b) => setState(() => _selectedBodyType = b),
+              ),
+            ),
+            const SizedBox(height: 14),
+            PrimaryButton(
+              text: _isSaving ? 'CALIBRATING...' : 'SAVE & TUNE AI TRAINER',
+              icon: Icons.auto_awesome_rounded,
+              onPressed: _isSaving ? null : _onSaveTapped,
+            ),
           ],
         ),
       ),

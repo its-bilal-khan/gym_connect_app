@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../notifications/presentation/widgets/urgent_dues_banner.dart';
 import '../../../../tracking/presentation/providers/step_tracker_notifier.dart';
+import '../../../../tracking/presentation/step_tracker_full_screen.dart';
 import '../../../../workout/presentation/active_workout_screen.dart';
 import '../../../../workout/presentation/providers/gamification_provider.dart';
 import '../../../../workout/presentation/providers/workout_notifier.dart';
@@ -11,6 +13,7 @@ import '../../../../workout/presentation/widgets/gym_leaderboard_sheet.dart';
 import '../../../../workout/presentation/widgets/one_tap_action_card.dart';
 import 'pedometer_card.dart';
 import 'streak_badge.dart';
+import 'transformation_spotlight_card.dart';
 
 class MemberTodayTab extends ConsumerWidget {
   const MemberTodayTab({super.key});
@@ -40,7 +43,8 @@ class MemberTodayTab extends ConsumerWidget {
                 Text('DAY ${routine?.dayNumber ?? 1} OF 90', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
+            const UrgentDuesBanner(),
             if (routine != null) ...[
               OneTapActionCard(
                 routine: routine,
@@ -63,9 +67,17 @@ class MemberTodayTab extends ConsumerWidget {
               errorMessage: stepData.sensorError,
               badgeText: stepData.badgeText,
               isHealthConnectMissing: stepData.isHealthConnectMissing,
-              onTap: () => ref.read(stepTrackerProvider.notifier).handleCardAction(),
+              onTap: () {
+                if (stepData.isHealthConnectMissing || stepData.sensorError != null) {
+                  ref.read(stepTrackerProvider.notifier).handleCardAction();
+                } else {
+                  StepTrackerFullScreen.open(context);
+                }
+              },
               onTogglePause: () => ref.read(stepTrackerProvider.notifier).togglePauseResume(),
             ),
+            const SizedBox(height: 14),
+            const TransformationSpotlightCard(),
             SizedBox(height: 110 + bottomInset),
           ],
         ),

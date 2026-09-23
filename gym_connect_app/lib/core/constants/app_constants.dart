@@ -6,4 +6,6 @@ abstract final class AppConstants {
   static const String activeRoleKey = 'gymconnect_active_role';
   static const String todayStepsKey = 'gymconnect_today_steps';
   static const String todayStepsDateKey = 'gymconnect_today_steps_date';
+  static const String lastHardwareReadingKey = 'gymconnect_last_hw_reading';
+  static const String isPausedKey = 'gymconnect_tracker_is_paused';
 }

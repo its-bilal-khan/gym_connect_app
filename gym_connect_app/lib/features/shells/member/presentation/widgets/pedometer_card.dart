@@ -30,6 +30,7 @@ class PedometerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final showWaiting = (isWaiting || (!isLive && steps == 0) || errorMessage != null) && !isHealthConnectMissing && !isPaused;
     final titleText = steps == 0 ? '0 steps' : '$steps STEPS TODAY';
+    final isActionRequired = isHealthConnectMissing || (errorMessage != null && (badgeText == 'OPEN SETTINGS' || badgeText == 'PERMISSION NEEDED'));
 
     final String subtitleText;
     if (isPaused) {
@@ -113,7 +114,27 @@ class PedometerCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (onTogglePause != null)
+              if (isActionRequired)
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onTap?.call();
+                  },
+                  child: Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.orange),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.orange,
+                      size: 20,
+                    ),
+                  ),
+                )
+              else if (onTogglePause != null)
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();

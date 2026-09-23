@@ -73,7 +73,7 @@ void main() {
   });
 
   group('Goal Onboarding & Nutrition Engine Tests', () {
-    testWidgets('GoalOnboardingDialog renders gender, metrics and body type choices', (tester) async {
+    testWidgets('GoalOnboardingDialog renders body type choices and calorie calculator launcher', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -85,29 +85,13 @@ void main() {
       );
 
       expect(find.text('GENETICS & TARGET PHYSIQUE'), findsOneWidget);
-      expect(find.text('MALE'), findsOneWidget);
-      expect(find.text('FEMALE'), findsOneWidget);
-      expect(find.text('AGE'), findsOneWidget);
-      expect(find.text('HEIGHT'), findsOneWidget);
-      expect(find.text('CURRENT WT'), findsOneWidget);
-      expect(find.text('TARGET WT'), findsOneWidget);
-      expect(find.text('CALCULATOR'), findsOneWidget);
-
-      final textFields = find.byType(TextField);
-      expect(textFields, findsNWidgets(4));
-
-      // Enter new age
-      await tester.enterText(textFields.at(0), '26');
-      await tester.pump();
-
-      // Tap Female
-      await tester.tap(find.text('FEMALE'));
-      await tester.pump();
-
-      // Scroll and select Endomorph
+      expect(find.text('CALCULATE DAILY CALORIES & MACROS'), findsOneWidget);
+      expect(find.text('ECTOMORPH'), findsOneWidget);
+      expect(find.text('MESOMORPH'), findsOneWidget);
       await tester.drag(find.byType(ListView), const Offset(0, -350));
       await tester.pump();
       expect(find.text('ENDOMORPH'), findsOneWidget);
+      expect(find.text('SAVE & TUNE AI TRAINER'), findsOneWidget);
     });
 
     testWidgets('AiNutritionFuelCard renders metrics and handles tap', (tester) async {

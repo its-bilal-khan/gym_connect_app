@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
+import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/secure_storage_service.dart';
@@ -21,7 +23,9 @@ final stepTrackerServiceProvider = Provider<StepTrackerService>((ref) {
   try {
     client = Supabase.instance.client;
   } catch (_) {}
-  return StepTrackerService(storage, client);
+  final service = StepTrackerService(storage, client);
+  ref.onDispose(() => service.dispose());
+  return service;
 });
 
 class StepTrackerService {
@@ -40,8 +44,22 @@ class StepTrackerService {
 
   bool _isPaused = false;
   bool get isPaused => _isPaused;
-  void pauseTracking() => _isPaused = true;
-  void resumeTracking() => _isPaused = false;
+  void pauseTracking() {
+    _isPaused = true;
+    _storage?.saveTrackerPausedState(true).ignore();
+  }
+
+  void resumeTracking() {
+    _isPaused = false;
+    _storage?.saveTrackerPausedState(false).ignore();
+  }
+
+  int _lastKnownDailySteps = 0;
+  int? _lastHardwareReading;
+  String _pedestrianStatus = 'walking';
+  StreamSubscription<StepCount>? _pedometerSubscription;
+  StreamSubscription<PedestrianStatus>? _pedestrianSubscription;
+  final StreamController<int> _hardwareStepController = StreamController<int>.broadcast();
 
   StepTrackerService([
     this._storage,
@@ -117,13 +135,7 @@ class StepTrackerService {
       await configureHealth();
 
       if (Platform.isAndroid) {
-        final available = await isHealthConnectAvailable();
-        if (!available) {
-          debugPrint('StepTrackerService: Health Connect is not available on Android device');
-          return HealthAuthResult.healthConnectNotInstalled;
-        }
-
-        // Request Android Activity Recognition runtime permission before Health Connect prompt
+        // Request Android Activity Recognition runtime permission
         try {
           final status = await Permission.activityRecognition.status;
           if (!status.isGranted) {
@@ -131,6 +143,12 @@ class StepTrackerService {
           }
         } catch (e) {
           debugPrint('StepTrackerService: Activity recognition permission request error: $e');
+        }
+
+        final available = await isHealthConnectAvailable();
+        if (!available) {
+          debugPrint('StepTrackerService: Health Connect is not available on Android device');
+          return HealthAuthResult.healthConnectNotInstalled;
         }
       }
 
@@ -189,8 +207,76 @@ class StepTrackerService {
     return result == HealthAuthResult.authorized;
   }
 
+  void _initHardwarePedometer() {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS) || _mockStream != null) return;
+    if (_pedometerSubscription != null) return;
+
+    try {
+      _pedestrianSubscription = Pedometer.pedestrianStatusStream.listen(
+        (event) {
+          _pedestrianStatus = event.status;
+        },
+        onError: (err) {
+          debugPrint('StepTrackerService: Pedestrian status error: $err');
+        },
+        cancelOnError: false,
+      );
+
+      _pedometerSubscription = Pedometer.stepCountStream.listen(
+        (event) {
+          _handleHardwareStepCount(event.steps);
+        },
+        onError: (err) {
+          debugPrint('StepTrackerService: Hardware pedometer error: $err');
+        },
+        cancelOnError: false,
+      );
+    } catch (e) {
+      debugPrint('StepTrackerService: Hardware sensor initialization error: $e');
+    }
+  }
+
+  void _handleHardwareStepCount(int bootSteps) {
+    if (_isPaused) {
+      _lastHardwareReading = bootSteps;
+      return;
+    }
+
+    final todayStr = DateTime.now().toIso8601String().split('T').first;
+
+    if (_lastHardwareReading == null) {
+      _lastHardwareReading = bootSteps;
+      _storage?.saveLastHardwareReading(bootSteps, todayStr).ignore();
+      return;
+    }
+
+    final delta = bootSteps - _lastHardwareReading!;
+    _lastHardwareReading = bootSteps;
+    _storage?.saveLastHardwareReading(bootSteps, todayStr).ignore();
+
+    // Sanity filter: Ignore negative (reboot) or unrealistic single-tick jumps (> 500)
+    // Anti-noise filter: If pedestrian status is explicitly 'stopped', ignore micro-vibrations
+    if (delta > 0 && delta < 500 && _pedestrianStatus != 'stopped') {
+      _lastKnownDailySteps += delta;
+      saveLocalSteps(_lastKnownDailySteps).ignore();
+      if (!_hardwareStepController.isClosed) {
+        _hardwareStepController.add(_lastKnownDailySteps);
+      }
+    }
+  }
+
+  Future<void> saveBackgroundCheckpoint(int steps, {required bool isPaused}) async {
+    _isPaused = isPaused;
+    _lastKnownDailySteps = steps;
+    final todayStr = DateTime.now().toIso8601String().split('T').first;
+    await _storage?.saveTodaySteps(steps, todayStr);
+    await _storage?.saveTrackerPausedState(isPaused);
+    if (_lastHardwareReading != null) {
+      await _storage?.saveLastHardwareReading(_lastHardwareReading!, todayStr);
+    }
+  }
+
   Future<int?> fetchDailySteps() async {
-    if (_isPaused) return null;
     final now = DateTime.now();
     final midnight = DateTime(now.year, now.month, now.day);
 
@@ -200,20 +286,25 @@ class StepTrackerService {
 
     try {
       if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
-        return null;
+        return _lastKnownDailySteps > 0 ? _lastKnownDailySteps : null;
       }
-      final steps = await Health().getTotalStepsInInterval(
+      final healthSteps = await Health().getTotalStepsInInterval(
         midnight,
         now,
         includeManualEntry: false,
       );
-      if (steps != null) {
-        await saveLocalSteps(steps);
+      if (healthSteps != null && healthSteps >= 0) {
+        // Synchronize with higher count if Health Connect / Google Fit recorded more steps
+        if (healthSteps > _lastKnownDailySteps) {
+          _lastKnownDailySteps = healthSteps;
+        }
+        await saveLocalSteps(_lastKnownDailySteps);
+        return _lastKnownDailySteps;
       }
-      return steps;
+      return _lastKnownDailySteps > 0 ? _lastKnownDailySteps : null;
     } catch (e) {
       debugPrint('StepTrackerService: fetchDailySteps error: $e');
-      return null;
+      return _lastKnownDailySteps > 0 ? _lastKnownDailySteps : null;
     }
   }
 
@@ -225,31 +316,87 @@ class StepTrackerService {
       return const Stream.empty();
     }
 
-    return Stream.periodic(const Duration(seconds: 3))
+    _initHardwarePedometer();
+
+    final healthStream = Stream.periodic(const Duration(seconds: 4))
         .where((_) => !_isPaused)
         .asyncMap((_) => fetchDailySteps())
         .where((steps) => steps != null)
-        .map((steps) => steps!)
-        .handleError((e) {
-      debugPrint('StepTrackerService: health stream error: $e');
-      throw e;
-    });
+        .map((steps) => steps!);
+
+    final hardwareStream = _hardwareStepController.stream.where((_) => !_isPaused);
+
+    late final StreamController<int> mergedController;
+    StreamSubscription<int>? sub1;
+    StreamSubscription<int>? sub2;
+
+    mergedController = StreamController<int>.broadcast(
+      onListen: () {
+        sub1 = hardwareStream.listen(
+          (steps) {
+            if (!mergedController.isClosed) mergedController.add(steps);
+          },
+          onError: (e) {
+            if (!mergedController.isClosed) mergedController.addError(e);
+          },
+        );
+        sub2 = healthStream.listen(
+          (steps) {
+            if (!mergedController.isClosed) mergedController.add(steps);
+          },
+          onError: (e) {
+            if (!mergedController.isClosed) mergedController.addError(e);
+          },
+        );
+      },
+      onCancel: () {
+        sub1?.cancel();
+        sub2?.cancel();
+      },
+    );
+
+    return mergedController.stream;
   }
 
   Future<int> loadTodayBaseline() async {
-    final healthSteps = await fetchDailySteps();
-    if (healthSteps != null && healthSteps >= 0) {
-      return healthSteps;
+    final todayStr = DateTime.now().toIso8601String().split('T').first;
+
+    // Check if tracker was previously paused
+    if (_storage != null) {
+      _isPaused = await _storage.getTrackerPausedState();
     }
 
-    final todayStr = DateTime.now().toIso8601String().split('T').first;
-    try {
-      if (_storage != null) {
-        final localSteps = await _storage.getTodaySteps(todayStr);
-        if (localSteps != null) return localSteps;
+    final healthSteps = await fetchDailySteps();
+    if (healthSteps != null && healthSteps > 0) {
+      _lastKnownDailySteps = healthSteps;
+    }
+
+    if (_storage != null) {
+      final savedSteps = await _storage.getTodaySteps(todayStr);
+      if (savedSteps != null && savedSteps > _lastKnownDailySteps) {
+        _lastKnownDailySteps = savedSteps;
       }
-      final client = _supabase;
-      if (client != null && client.auth.currentUser != null) {
+
+      // Reconcile steps taken while app was closed if not paused
+      if (!_isPaused && _lastHardwareReading != null) {
+        final lastSavedHw = await _storage.getLastHardwareReading(todayStr);
+        if (lastSavedHw != null && _lastHardwareReading! > lastSavedHw) {
+          final closedAppDelta = _lastHardwareReading! - lastSavedHw;
+          if (closedAppDelta > 0 && closedAppDelta < 50000) {
+            _lastKnownDailySteps += closedAppDelta;
+            await saveLocalSteps(_lastKnownDailySteps);
+          }
+        }
+      }
+    }
+
+    if (_lastKnownDailySteps > 0) {
+      return _lastKnownDailySteps;
+    }
+
+    final client = _supabase;
+    if (client != null && client.auth.currentUser != null) {
+      try {
         final userId = client.auth.currentUser!.id;
         final res = await client
             .from('daily_step_logs')
@@ -260,16 +407,19 @@ class StepTrackerService {
         if (res != null && res['step_count'] != null) {
           final count = (res['step_count'] as num).toInt();
           await _storage?.saveTodaySteps(count, todayStr);
+          _lastKnownDailySteps = count;
           return count;
         }
+      } catch (e) {
+        debugPrint('StepTrackerService: loadTodayBaseline error: $e');
       }
-    } catch (e) {
-      debugPrint('StepTrackerService: loadTodayBaseline error: $e');
     }
-    return 0;
+
+    return _lastKnownDailySteps;
   }
 
   Future<void> saveLocalSteps(int steps) async {
+    _lastKnownDailySteps = steps;
     final todayStr = DateTime.now().toIso8601String().split('T').first;
     await _storage?.saveTodaySteps(steps, todayStr);
   }
@@ -307,5 +457,11 @@ class StepTrackerService {
     } catch (e) {
       debugPrint('StepTrackerService: sync error: $e');
     }
+  }
+
+  void dispose() {
+    _pedometerSubscription?.cancel();
+    _pedestrianSubscription?.cancel();
+    _hardwareStepController.close();
   }
 }

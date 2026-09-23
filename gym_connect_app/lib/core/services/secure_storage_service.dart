@@ -61,6 +61,28 @@ class SecureStorageService {
     return null;
   }
 
+  Future<void> saveTrackerPausedState(bool isPaused) async {
+    await _storage.write(key: AppConstants.isPausedKey, value: isPaused.toString());
+  }
+
+  Future<bool> getTrackerPausedState() async {
+    final val = await _storage.read(key: AppConstants.isPausedKey);
+    return val == 'true';
+  }
+
+  Future<void> saveLastHardwareReading(int reading, String date) async {
+    await _storage.write(key: AppConstants.lastHardwareReadingKey, value: '$date:$reading');
+  }
+
+  Future<int?> getLastHardwareReading(String date) async {
+    final val = await _storage.read(key: AppConstants.lastHardwareReadingKey);
+    if (val != null && val.startsWith('$date:')) {
+      final parts = val.split(':');
+      if (parts.length >= 2) return int.tryParse(parts[1]);
+    }
+    return null;
+  }
+
   Future<void> clearAll() async {
     await _storage.deleteAll();
   }

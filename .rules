@@ -32,3 +32,9 @@
    - Separate Business Logic from UI strictly (use the agreed state management approach like Riverpod or Bloc).
 4. **Error Handling & Production-Ready:** No silent failures. Wrap API calls in proper `try-catch` blocks and return user-friendly error messages. 
 5. **Push Back on Bad Practices:** If the user (me) asks you to write code that is insecure or breaks architecture, you must REFUSE, explain why it's a security risk, and provide the professional alternative.
+6. **Zero Hardcoded Fake / Mock Data in Code:**
+   - NEVER hardcode fake, dummy, or mock data (e.g., hardcoded product lists, fake reviews, static user subscriptions, fake transformation stories) directly inside Dart/Flutter code.
+   - All application data MUST be fetched from and written to live Supabase database tables via dedicated repositories and Riverpod providers.
+   - If initial/sample data is needed for development or onboarding, it MUST be injected into the PostgreSQL database using SQL seed scripts (`.sql` seeders).
+   - Even database seed data MUST be realistic, authentic, and professional (real gym supplements, realistic Pakistani & international pricing, authentic transformation protocols)—never cheap or unrealistic placeholder text.
+   - The UI must always handle real database states (loading, error, empty, data).

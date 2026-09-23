@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/step_tracker_service.dart';
 
@@ -58,7 +59,7 @@ class StepTrackingData {
 
 final stepTrackerProvider = NotifierProvider<StepTrackerNotifier, StepTrackingData>(StepTrackerNotifier.new);
 
-class StepTrackerNotifier extends Notifier<StepTrackingData> {
+class StepTrackerNotifier extends Notifier<StepTrackingData> with WidgetsBindingObserver {
   StreamSubscription<int>? _subscription;
   Timer? _pollingTimer;
   int _baselineSteps = 0;
@@ -67,12 +68,27 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
   @override
   StepTrackingData build() {
     _service = ref.read(stepTrackerServiceProvider);
+    WidgetsBinding.instance.addObserver(this);
     ref.onDispose(() {
+      WidgetsBinding.instance.removeObserver(this);
       _subscription?.cancel();
       _pollingTimer?.cancel();
     });
     Future.microtask(() => initLiveTracking());
     return const StepTrackingData();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      // App being closed or backgrounded: persist state and hardware baseline
+      _service.saveBackgroundCheckpoint(this.state.steps, isPaused: this.state.isPaused).ignore();
+    } else if (state == AppLifecycleState.resumed) {
+      // App re-opened after being closed: reconcile steps walked in background immediately
+      if (!this.state.isPaused) {
+        refreshDailySteps();
+      }
+    }
   }
 
   Future<void> initLiveTracking() async {
@@ -112,16 +128,25 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
     _baselineSteps = initialCount;
     updateSteps(
       initialCount,
-      isLive: true,
+      isLive: !_service.isPaused,
       isWaiting: false,
-      badge: 'HEALTH CONNECT LIVE',
+      badge: _service.isPaused ? 'TRACKING PAUSED' : 'HEALTH CONNECT LIVE',
     );
 
+    if (!_service.isPaused) {
+      _startListeningToLiveStream();
+      _startPolling();
+    }
+  }
+
+  void _startListeningToLiveStream() {
     _subscription?.cancel();
     _subscription = _service.liveStepStream.listen(
       (steps) {
-        if (!ref.mounted) return;
-        _baselineSteps = steps;
+        if (!ref.mounted || state.isPaused) return;
+        if (steps > _baselineSteps) {
+          _baselineSteps = steps;
+        }
         updateSteps(steps, isLive: true, isWaiting: false, badge: 'HEALTH CONNECT LIVE');
       },
       onError: (err) {
@@ -130,13 +155,11 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
       },
       cancelOnError: false,
     );
-
-    _startPolling();
   }
 
   void _startPolling() {
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
       await _pollSteps();
     });
   }
@@ -148,8 +171,9 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
       final hasPerm = await _service.hasStepPermission();
       if (!ref.mounted) return;
       if (hasPerm) {
-        final steps = await _service.fetchDailySteps() ?? 0;
+        final fetched = await _service.fetchDailySteps();
         if (!ref.mounted) return;
+        final steps = (fetched != null && fetched > 0) ? fetched : _baselineSteps;
         _baselineSteps = steps;
         updateSteps(steps, isLive: true, isWaiting: false, badge: 'HEALTH CONNECT LIVE');
       }
@@ -157,8 +181,8 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
     }
 
     final steps = await _service.fetchDailySteps();
-    if (!ref.mounted || steps == null) return;
-    if (steps != state.steps || !state.isTrackingLive) {
+    if (!ref.mounted || steps == null || state.isPaused) return;
+    if (steps > state.steps || !state.isTrackingLive) {
       _baselineSteps = steps;
       updateSteps(steps, isLive: true, isWaiting: false, badge: 'HEALTH CONNECT LIVE');
     }
@@ -175,10 +199,12 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
     if (!ref.mounted) return;
 
     if (hasPerm) {
-      final steps = await _service.fetchDailySteps() ?? 0;
+      final fetched = await _service.fetchDailySteps();
       if (!ref.mounted) return;
+      final steps = (fetched != null && fetched > 0) ? fetched : (_baselineSteps > 0 ? _baselineSteps : state.steps);
       _baselineSteps = steps;
       updateSteps(steps, isLive: true, isWaiting: false, badge: 'HEALTH CONNECT LIVE');
+      _startListeningToLiveStream();
       _startPolling();
       return;
     }
@@ -188,10 +214,12 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
     if (!ref.mounted) return;
 
     if (authResult == HealthAuthResult.authorized) {
-      final steps = await _service.fetchDailySteps() ?? 0;
+      final fetched = await _service.fetchDailySteps();
       if (!ref.mounted) return;
+      final steps = (fetched != null && fetched > 0) ? fetched : (_baselineSteps > 0 ? _baselineSteps : state.steps);
       _baselineSteps = steps;
       updateSteps(steps, isLive: true, isWaiting: false, badge: 'HEALTH CONNECT LIVE');
+      _startListeningToLiveStream();
       _startPolling();
       return;
     }
@@ -207,7 +235,7 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
       return;
     }
 
-    // Framework rejected or ignored request (e.g. permanently denied): open Settings directly
+    // Framework rejected or ignored request: open Settings directly
     state = state.copyWith(
       isWaitingForSensor: false,
       sensorError: 'System rejected prompt. Opening Settings to enable Steps...',
@@ -220,8 +248,10 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
   Future<void> refreshDailySteps() async {
     final steps = await _service.fetchDailySteps();
     if (!ref.mounted || steps == null) return;
-    _baselineSteps = steps;
-    updateSteps(steps, isLive: true, isWaiting: false, badge: 'HEALTH CONNECT LIVE');
+    if (steps > state.steps) {
+      _baselineSteps = steps;
+      updateSteps(steps, isLive: true, isWaiting: false, badge: 'HEALTH CONNECT LIVE');
+    }
   }
 
   void addSteps(int count) {
@@ -258,8 +288,10 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
 
   void pauseTracking() {
     _service.pauseTracking();
-    _subscription?.pause();
+    _subscription?.cancel();
+    _subscription = null;
     _pollingTimer?.cancel();
+    _pollingTimer = null;
     state = state.copyWith(
       isPaused: true,
       isTrackingLive: false,
@@ -269,12 +301,12 @@ class StepTrackerNotifier extends Notifier<StepTrackingData> {
 
   void resumeTracking() {
     _service.resumeTracking();
-    _subscription?.resume();
     state = state.copyWith(
       isPaused: false,
       isTrackingLive: true,
       badgeText: 'HEALTH CONNECT LIVE',
     );
+    _startListeningToLiveStream();
     _startPolling();
   }
 

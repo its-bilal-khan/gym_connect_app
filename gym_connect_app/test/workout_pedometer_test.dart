@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:health/health.dart';
+import 'package:gym_connect_app/core/services/secure_storage_service.dart';
 import 'package:gym_connect_app/features/shells/member/presentation/widgets/pedometer_card.dart';
 import 'package:gym_connect_app/features/tracking/presentation/providers/step_tracker_notifier.dart';
 import 'package:gym_connect_app/features/tracking/services/step_tracker_service.dart';
@@ -151,6 +153,21 @@ void main() {
       service.resumeTracking();
       expect(service.isPaused, isFalse);
     });
+
+    test('StepTrackerService closed-app checkpoint and background delta reconciliation', () async {
+      FlutterSecureStorage.setMockInitialValues({});
+      const storage = SecureStorageService(FlutterSecureStorage());
+      final service = StepTrackerService(storage);
+
+      // User walks 2000 steps with app open, then app closes without pause
+      await service.saveBackgroundCheckpoint(2000, isPaused: false);
+      expect(service.isPaused, isFalse);
+
+      // Re-opening app on the same day loads preserved steps
+      final baseline = await service.loadTodayBaseline();
+      expect(baseline, 2000);
+      expect(service.isPaused, isFalse);
+    });
   });
 
   group('StepTrackerNotifier Live Hardware Tests', () {
@@ -199,6 +216,37 @@ void main() {
 
       notifier.togglePauseResume();
       expect(container.read(stepTrackerProvider).isPaused, isTrue);
+    });
+
+    test('StepTrackerNotifier preserves step count and does not wipe to 0 when paused or refetched', () async {
+      final mockService = StepTrackerService(
+        null,
+        null,
+        null,
+        (start, end) async => 5000,
+      );
+      final container = ProviderContainer(
+        overrides: [stepTrackerServiceProvider.overrideWithValue(mockService)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(stepTrackerProvider.notifier);
+      await Future<void>.delayed(const Duration(milliseconds: 25));
+      expect(container.read(stepTrackerProvider).steps, 5000);
+
+      // Pause tracking
+      notifier.pauseTracking();
+      expect(container.read(stepTrackerProvider).steps, 5000);
+      expect(container.read(stepTrackerProvider).isPaused, isTrue);
+
+      // Re-trigger handleCardAction while paused: must not reset to 0
+      await notifier.handleCardAction();
+      expect(container.read(stepTrackerProvider).steps, 5000);
+
+      // Resume tracking: preserves steps
+      notifier.resumeTracking();
+      expect(container.read(stepTrackerProvider).steps, 5000);
+      expect(container.read(stepTrackerProvider).isPaused, isFalse);
     });
 
     test('StepTrackerNotifier updates immediately upon receiving first sensor event', () async {
@@ -619,5 +667,29 @@ void main() {
       await tester.pump();
       expect(toggleTapped, isTrue);
     });
+
+    testWidgets('PedometerCard renders action button and triggers onTap when permission is needed', (tester) async {
+      bool tapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PedometerCard(
+              badgeText: 'PERMISSION NEEDED',
+              errorMessage: 'Health permission required. Tap to grant.',
+              onTap: () => tapped = true,
+              onTogglePause: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('PERMISSION NEEDED'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.arrow_forward_rounded));
+      await tester.pump();
+      expect(tapped, isTrue);
+    });
   });
 }
+
