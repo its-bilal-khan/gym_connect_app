@@ -178,6 +178,10 @@ CREATE TABLE IF NOT EXISTS tenants (
         "esp32_gate_enabled": true,
         "store_enabled": true
     }'::jsonb,
+    is_payfast_enabled BOOLEAN DEFAULT FALSE,
+    is_manual_payment_enabled BOOLEAN DEFAULT FALSE,
+    manual_easypaisa_number TEXT,
+    manual_bank_details TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -428,10 +432,13 @@ CREATE TABLE IF NOT EXISTS invoice_items (
 CREATE TABLE IF NOT EXISTS payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    invoice_id UUID NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    invoice_id UUID REFERENCES invoices(id) ON DELETE SET NULL,
     member_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
     amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
-    payment_method payment_method NOT NULL,
+    receipt_image_url TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    payment_method VARCHAR(50) DEFAULT 'manual_transfer',
     transaction_reference VARCHAR(255),
     payment_gateway_response JSONB DEFAULT '{}'::jsonb,
     collected_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
@@ -641,14 +648,25 @@ CREATE TABLE IF NOT EXISTS gym_reviews (
     CONSTRAINT uq_member_gym_review UNIQUE (tenant_id, member_id)
 );
 
--- 8.7 In-App Store Orders (In-Gym Pickup)
+-- 8.7 In-App Store Orders (In-Gym Pickup & Delivery)
 CREATE TABLE IF NOT EXISTS store_orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    member_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    member_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
     invoice_id UUID REFERENCES invoices(id) ON DELETE SET NULL,
-    pickup_code VARCHAR(10) NOT NULL, -- 6-digit counter pickup code
+    pickup_code VARCHAR(10) NOT NULL, -- Counter pickup code
+    fulfillment_type VARCHAR(20) NOT NULL DEFAULT 'pickup' CHECK (fulfillment_type IN ('pickup', 'delivery')),
+    delivery_address TEXT,
+    delivery_phone TEXT,
+    customer_name TEXT,
+    customer_phone TEXT,
     order_status store_order_status NOT NULL DEFAULT 'pending',
+    estimated_ready_date DATE,
+    estimated_ready_time TEXT,
+    payment_method VARCHAR(50) DEFAULT 'manual_transfer',
+    payment_receipt_url TEXT,
+    payment_id UUID REFERENCES payments(id) ON DELETE SET NULL,
     total_amount NUMERIC(12, 2) NOT NULL CHECK (total_amount >= 0),
     is_paid BOOLEAN DEFAULT FALSE,
     notes TEXT,
@@ -1537,12 +1555,21 @@ CREATE POLICY "Members can create transformation posts" ON transformation_posts
         tenant_id = auth_current_tenant_id()
     );
 
+DROP POLICY IF EXISTS "Anyone can create store orders" ON store_orders;
+CREATE POLICY "Anyone can create store orders" ON store_orders
+    FOR INSERT WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "Anyone can insert store order items" ON store_order_items;
+CREATE POLICY "Anyone can insert store order items" ON store_order_items
+    FOR INSERT WITH CHECK (TRUE);
+
 DROP POLICY IF EXISTS "Members and staff manage store orders" ON store_orders;
 CREATE POLICY "Members and staff manage store orders" ON store_orders
     FOR ALL USING (
         member_id = auth.uid() OR
+        user_id = auth.uid() OR
         auth_is_super_admin() OR
-        (auth_current_role() IN ('gym_owner', 'staff') AND tenant_id = auth_current_tenant_id())
+        (auth_current_role() IN ('gym_owner', 'staff') AND (tenant_id = auth_current_tenant_id() OR auth_current_tenant_id() IS NULL))
     );
 
 DROP POLICY IF EXISTS "Members and staff view order items" ON store_order_items;
@@ -1552,8 +1579,9 @@ CREATE POLICY "Members and staff view order items" ON store_order_items
             SELECT 1 FROM store_orders
             WHERE id = store_order_items.order_id AND (
                 member_id = auth.uid() OR
+                user_id = auth.uid() OR
                 auth_is_super_admin() OR
-                (auth_current_role() IN ('gym_owner', 'staff') AND tenant_id = auth_current_tenant_id())
+                (auth_current_role() IN ('gym_owner', 'staff') AND (tenant_id = auth_current_tenant_id() OR auth_current_tenant_id() IS NULL))
             )
         )
     );

@@ -59,7 +59,7 @@ SET name = EXCLUDED.name, price = EXCLUDED.price, duration_days = EXCLUDED.durat
 -- 3. SEED AUTHENTIC IN-GYM STORE PRODUCTS
 DELETE FROM products WHERE tenant_id = '00000000-0000-0000-0000-000000000001';
 
-INSERT INTO products (id, tenant_id, barcode, sku, name, category, description, cost_price, selling_price, stock_quantity, is_active)
+INSERT INTO products (id, tenant_id, barcode, sku, name, category, description, cost_price, selling_price, stock_quantity, image_url, is_active)
 VALUES
 (
     '00000000-0000-0000-0000-000000000031',
@@ -72,6 +72,7 @@ VALUES
     14500.00,
     18500.00,
     25,
+    'https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?auto=format&fit=crop&w=800&q=80',
     TRUE
 ),
 (
@@ -85,6 +86,7 @@ VALUES
     12800.00,
     16200.00,
     18,
+    'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?auto=format&fit=crop&w=800&q=80',
     TRUE
 ),
 (
@@ -98,6 +100,7 @@ VALUES
     5200.00,
     6800.00,
     35,
+    'https://images.unsplash.com/photo-1546483875-ad9014c88eba?auto=format&fit=crop&w=800&q=80',
     TRUE
 ),
 (
@@ -111,6 +114,7 @@ VALUES
     4200.00,
     5500.00,
     40,
+    'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=800&q=80',
     TRUE
 ),
 (
@@ -124,6 +128,7 @@ VALUES
     4800.00,
     6200.00,
     22,
+    'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80',
     TRUE
 ),
 (
@@ -137,6 +142,7 @@ VALUES
     280.00,
     450.00,
     500,
+    'https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=800&q=80',
     TRUE
 ),
 (
@@ -150,6 +156,7 @@ VALUES
     180.00,
     300.00,
     150,
+    'https://images.unsplash.com/photo-1622484216800-4b2105e4cb31?auto=format&fit=crop&w=800&q=80',
     TRUE
 ),
 (
@@ -163,6 +170,7 @@ VALUES
     1900.00,
     2800.00,
     30,
+    'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80',
     TRUE
 );
 
