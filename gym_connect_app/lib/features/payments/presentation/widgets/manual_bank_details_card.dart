@@ -54,7 +54,7 @@ class ManualBankDetailsCard extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.account_balance_rounded, color: AppColors.primary, size: 20),
+                child: Icon(Icons.account_balance_rounded, color: AppColors.primary, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -102,7 +102,7 @@ class ManualBankDetailsCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 16),
+                Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 16),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -152,7 +152,7 @@ class ManualBankDetailsCard extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.copy_rounded, size: 18, color: AppColors.primary),
+            icon: Icon(Icons.copy_rounded, size: 18, color: AppColors.primary),
             tooltip: 'Copy',
             onPressed: onCopy,
           ),

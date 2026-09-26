@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
+import '../../../notifications/data/notification_repository.dart';
 import '../../data/store_repository.dart';
 
 enum StoreViewMode { grid, list }
@@ -83,6 +84,22 @@ class StoreActionNotifier extends Notifier<StoreActionState> {
         state = const StoreActionState(isLoading: false, successMessage: 'Order status updated');
         ref.invalidate(tenantStoreOrdersProvider(tenantId));
         ref.invalidate(customerOrdersProvider);
+
+        final shortId = orderId.length > 6 ? orderId.substring(0, 6).toUpperCase() : orderId.toUpperCase();
+        ref.read(gymNotificationsProvider.notifier).pushNotification(
+          GymNotification(
+            id: 'notif-order-live-$orderId-${DateTime.now().millisecondsSinceEpoch}',
+            title: status == 'ready_for_pickup'
+                ? '🛒 STORE ORDER READY FOR PICKUP!'
+                : (status == 'completed' ? '✅ ORDER MARKED AS COLLECTED' : '⚡ ORDER STATUS: ${status.toUpperCase()}'),
+            message: status == 'ready_for_pickup'
+                ? 'Order #$shortId is approved & packed! Ready: ${estimatedReadyTime ?? "Ready Now"}. Show Counter Pickup Code at the juice bar.'
+                : 'Order #$shortId has been successfully updated to $status.',
+            type: NotificationType.storeOrder,
+            timestamp: DateTime.now(),
+            actionPayload: orderId,
+          ),
+        );
         return true;
       } else {
         state = const StoreActionState(isLoading: false, errorMessage: 'Failed to update order');

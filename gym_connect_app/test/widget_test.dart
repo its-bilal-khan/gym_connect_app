@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:gym_connect_app/features/auth/presentation/auth_gate.dart';
 import 'package:gym_connect_app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:gym_connect_app/features/dashboard/presentation/widgets/dashboard_sidebar.dart';
 import 'package:gym_connect_app/main.dart';
 
 void main() {
+  setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
+  });
+
   testWidgets('GymConnectApp loads LoginScreen via AuthGate when unauthenticated', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: GymConnectApp()));
     await tester.pump();

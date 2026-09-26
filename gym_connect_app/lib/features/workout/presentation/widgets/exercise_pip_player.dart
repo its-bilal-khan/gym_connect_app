@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/youtube_video_utils.dart';
 import '../../domain/models/workout_models.dart';
 import 'fullscreen_video_dialog.dart';
 import 'pip_player_overlay.dart';
+import 'youtube_embed_player.dart';
 
 class ExercisePipPlayer extends StatefulWidget {
   final Exercise exercise;
@@ -38,9 +40,18 @@ class _ExercisePipPlayerState extends State<ExercisePipPlayer> {
     }
   }
 
-  String get _activeUrl => (_isFrontAngle ? widget.exercise.videoUrl : widget.exercise.sideVideoUrl) ?? widget.exercise.videoUrl ?? '';
+  bool get _hasSideVideo =>
+      widget.exercise.sideVideoUrl != null &&
+      widget.exercise.sideVideoUrl!.trim().isNotEmpty;
+
+  String get _activeUrl => (_isFrontAngle || !_hasSideVideo
+          ? widget.exercise.videoUrl
+          : widget.exercise.sideVideoUrl) ??
+      widget.exercise.videoUrl ??
+      '';
 
   void _toggleAngle() {
+    if (!_hasSideVideo) return;
     setState(() => _isFrontAngle = !_isFrontAngle);
     _initVideo();
   }
@@ -50,6 +61,10 @@ class _ExercisePipPlayerState extends State<ExercisePipPlayer> {
     final primary = _activeUrl;
     if (primary.isEmpty) {
       if (mounted) setState(() { _isLoading = false; _hasError = true; });
+      return;
+    }
+    if (YoutubeVideoUtils.isYouTubeUrl(primary)) {
+      if (mounted) setState(() { _isLoading = false; _hasError = false; });
       return;
     }
     if (mounted) setState(() { _isLoading = true; _hasError = false; });
@@ -92,6 +107,7 @@ class _ExercisePipPlayerState extends State<ExercisePipPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    final isYt = YoutubeVideoUtils.isYouTubeUrl(_activeUrl);
     final ctrl = _controller;
     final isReady = !_isLoading && !_hasError && ctrl != null && ctrl.value.isInitialized;
 
@@ -112,7 +128,16 @@ class _ExercisePipPlayerState extends State<ExercisePipPlayer> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  if (isReady)
+                  if (isYt)
+                    SizedBox.expand(
+                      child: YoutubeEmbedPlayer(
+                        videoUrl: _activeUrl,
+                        autoPlay: true,
+                        loop: true,
+                        mute: true,
+                      ),
+                    )
+                  else if (isReady)
                     SizedBox.expand(
                       child: FittedBox(
                         fit: BoxFit.cover,
@@ -123,6 +148,7 @@ class _ExercisePipPlayerState extends State<ExercisePipPlayer> {
                     PipStatusPlaceholder(isLoading: _isLoading, onRetry: _initVideo),
                   PipPlayerOverlay(
                     isFrontAngle: _isFrontAngle,
+                    hasSideAngle: _hasSideVideo,
                     onToggleAngle: _toggleAngle,
                     onExpand: () => FullscreenVideoDialog.show(context, widget.exercise, isFrontAngle: _isFrontAngle),
                   ),
@@ -134,7 +160,7 @@ class _ExercisePipPlayerState extends State<ExercisePipPlayer> {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                const Icon(Icons.tips_and_updates_rounded, color: AppColors.primaryAccent, size: 16),
+                Icon(Icons.tips_and_updates_rounded, color: AppColors.primaryAccent, size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(widget.exercise.tips, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),

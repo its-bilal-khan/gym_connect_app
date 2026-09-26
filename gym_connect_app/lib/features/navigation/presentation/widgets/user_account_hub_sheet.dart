@@ -6,6 +6,7 @@ import '../../../auth/domain/models/user_profile.dart';
 import '../../../auth/domain/models/user_role.dart';
 import '../../../notifications/data/notification_repository.dart';
 import '../../../notifications/presentation/widgets/gym_notifications_sheet.dart';
+import '../../../../core/theme/widgets/theme_color_switcher_dialog.dart';
 import 'role_switcher_sheet.dart';
 
 class UserAccountHubSheet extends ConsumerWidget {
@@ -122,6 +123,23 @@ class UserAccountHubSheet extends ConsumerWidget {
                 backgroundColor: Colors.transparent,
                 builder: (_) => RoleSwitcherSheet(activeRole: activeRole, onSelectRole: onRoleChanged),
               );
+            },
+          ),
+          const SizedBox(height: 10),
+          ListTile(
+            tileColor: AppColors.background,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: AppColors.border)),
+            leading: Icon(Icons.palette_outlined, color: accent, size: 24),
+            title: Text('Brand Theme & Color', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+            subtitle: Text('Switch between 4 high-contrast accent themes', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
+            trailing: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              ThemeColorSwitcherDialog.show(context);
             },
           ),
           const SizedBox(height: 16),

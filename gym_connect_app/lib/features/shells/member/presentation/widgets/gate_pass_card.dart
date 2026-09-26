@@ -2,19 +2,20 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../../../../../core/theme/app_colors.dart';
 import 'gate_pass_qr_preview.dart';
 
-class GatePassCard extends StatefulWidget {
+class GatePassCard extends ConsumerStatefulWidget {
   const GatePassCard({super.key});
 
   @override
-  State<GatePassCard> createState() => _GatePassCardState();
+  ConsumerState<GatePassCard> createState() => _GatePassCardState();
 }
 
-class _GatePassCardState extends State<GatePassCard> {
+class _GatePassCardState extends ConsumerState<GatePassCard> {
   Timer? _timer;
   StreamSubscription<UserAccelerometerEvent>? _accelSub;
   int _secondsRemaining = 10;
@@ -85,34 +86,49 @@ class _GatePassCardState extends State<GatePassCard> {
     HapticFeedback.heavyImpact();
     setState(() => _isUnlocking = true);
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+    await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
 
     setState(() {
       _isUnlocking = false;
-      // Anti-Passback & Security Protection: Auto-disconnect shake after successful entry
-      if (isShakeTrigger) {
-        _shakeEnabled = false;
-        _accelSub?.cancel();
-      }
+      _lastShakeTime = DateTime.now();
     });
     HapticFeedback.mediumImpact();
 
+
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: AppColors.surface,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.primaryAccent)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: AppColors.primaryAccent, width: 1.5),
+        ),
+        duration: const Duration(seconds: 4),
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: AppColors.primaryAccent),
+            Icon(Icons.bolt_rounded, color: AppColors.primaryAccent, size: 24),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                isShakeTrigger
-                    ? '⚡ Gate Unlocked (5s) • Shake Auto-Disabled (Anti-Passback)'
-                    : 'ESP32 Gate Signal Sent: Magnetic Lock Released (5s)',
-                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isShakeTrigger
+                        ? '⚡ TURNSTILE UNLOCKED (SHAKE VERIFIED)'
+                        : 'ESP32 Gate Signal Sent: Magnetic Lock Released (5s)',
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Magnetic lock released (5s) • Alert added to notification bell on top!',
+                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                ],
               ),
             ),
           ],
@@ -142,38 +158,34 @@ class _GatePassCardState extends State<GatePassCard> {
           GatePassQrPreview(currentToken: _currentToken, isUnlocking: _isUnlocking, accent: accent),
           const SizedBox(height: 10),
           Text('Refreshes dynamically every 10s • Single Device Protected', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _shakeEnabled ? accent : AppColors.textSecondary,
-                    side: BorderSide(color: _shakeEnabled ? accent.withValues(alpha: 0.5) : AppColors.border),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(8)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.sensors_rounded, size: 13, color: _shakeEnabled ? accent : AppColors.textSecondary),
+                const SizedBox(width: 5),
+                Text(
+                  _shakeEnabled ? 'Hardware Accelerometer: ON' : 'Hardware Accelerometer: OFF',
+                  style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () {
                     setState(() {
                       _shakeEnabled = !_shakeEnabled;
                       _listenShake();
                     });
                   },
-                  icon: Icon(_shakeEnabled ? Icons.vibration_rounded : Icons.phone_android_rounded, size: 16),
-                  label: Text(_shakeEnabled ? 'Shake: ON' : 'Shake: OFF', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+                  child: Text(
+                    _shakeEnabled ? '[Disable]' : '[Enable]',
+                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: accent),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: accent, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                  onPressed: _isUnlocking ? null : () => _simulateGateUnlock(),
-                  icon: const Icon(Icons.lock_open_rounded, size: 16),
-                  label: Text('TEST UNLOCK', style: GoogleFonts.oswald(fontSize: 13, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

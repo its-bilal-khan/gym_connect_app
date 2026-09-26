@@ -45,7 +45,7 @@ class ManualPaymentPendingDialog extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.primary, width: 2),
               ),
-              child: const Icon(Icons.schedule_rounded, color: AppColors.primary, size: 36),
+              child: Icon(Icons.schedule_rounded, color: AppColors.primary, size: 36),
             ),
             const SizedBox(height: 18),
             Text(

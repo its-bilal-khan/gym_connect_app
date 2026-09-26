@@ -48,7 +48,7 @@ class StaffPosKhataTab extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.receipt_long_rounded, color: AppColors.primaryAccent, size: 20),
+                      Icon(Icons.receipt_long_rounded, color: AppColors.primaryAccent, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         'RETAIL CAPABILITIES',

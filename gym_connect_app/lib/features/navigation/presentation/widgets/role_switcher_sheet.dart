@@ -15,6 +15,7 @@ class RoleSwitcherSheet extends StatelessWidget {
   });
 
   static const _roles = [
+    (role: UserRole.superAdmin, title: 'Super Admin Platform', desc: 'Tenant management, SaaS tiers & multi-gym operations.'),
     (role: UserRole.owner, title: 'Gym Owner & Admin', desc: 'Financials, analytics, cameras & anti-theft.'),
     (role: UserRole.staff, title: 'Reception & POS Desk', desc: 'Check-ins, fee collections & shift reports.'),
     (role: UserRole.member, title: 'VIP Member Portal', desc: 'Dynamic QR pass & AI trainer routine.'),

@@ -33,7 +33,7 @@ class OrderTrackingScreen extends ConsumerWidget {
         color: AppColors.primary,
         onRefresh: () async => ref.invalidate(customerOrdersProvider),
         child: ordersAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
           error: (err, _) => Center(child: Text('Error loading orders: $err', style: GoogleFonts.inter(color: Colors.white))),
           data: (orders) {
             if (orders.isEmpty) {
@@ -98,7 +98,7 @@ class OrderTrackingScreen extends ConsumerWidget {
               decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.primary.withValues(alpha: 0.4))),
               child: Row(
                 children: [
-                  const Icon(Icons.event_available_rounded, size: 18, color: AppColors.primary),
+                  Icon(Icons.event_available_rounded, size: 18, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

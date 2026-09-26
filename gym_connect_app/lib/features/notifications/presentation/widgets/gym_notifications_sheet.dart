@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../shells/member/presentation/widgets/pay_dues_sheet.dart';
 import '../../../store/data/store_repository.dart';
 import '../../../store/presentation/product_detail_screen.dart';
+import '../../../store/presentation/screens/order_tracking_screen.dart';
 import '../../data/notification_repository.dart';
 
 class GymNotificationsSheet extends ConsumerWidget {
@@ -37,25 +38,41 @@ class GymNotificationsSheet extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('NOTIFICATIONS & ALERTS', style: GoogleFonts.oswald(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              Text('NOTIFICATIONS & ALERTS', style: GoogleFonts.oswald(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               TextButton(
                 onPressed: () => ref.read(gymNotificationsProvider.notifier).markAllAsRead(),
-                child: Text('MARK ALL READ', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: accent)),
+                child: Text('MARK ALL READ', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
               ),
             ],
           ),
           const SizedBox(height: 10),
           if (notifs.isEmpty)
-            Expanded(child: Center(child: Text('No active notifications', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary))))
+            Expanded(
+              child: RefreshIndicator(
+                color: accent,
+                onRefresh: () => ref.read(gymNotificationsProvider.notifier).loadNotifications(),
+                child: ListView(
+                  children: [
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                    Center(child: Text('No active notifications • Pull to refresh', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary))),
+                  ],
+                ),
+              ),
+            )
           else
             Expanded(
-              child: ListView.separated(
-                itemCount: notifs.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, i) {
-                  final n = notifs[i];
-                  return _buildTile(context, ref, n, accent);
-                },
+              child: RefreshIndicator(
+                color: accent,
+                onRefresh: () => ref.read(gymNotificationsProvider.notifier).loadNotifications(),
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: notifs.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (context, i) {
+                    final n = notifs[i];
+                    return _buildTile(context, ref, n, accent);
+                  },
+                ),
               ),
             ),
         ],
@@ -97,6 +114,37 @@ class GymNotificationsSheet extends ConsumerWidget {
               icon: const Icon(Icons.payment_rounded, size: 16),
               label: Text('PAY NOW & PREVENT LOCKOUT', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold)),
             )
+          else if (n.type == NotificationType.storeOrder)
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accent,
+                foregroundColor: Colors.black,
+                minimumSize: const Size.fromHeight(36),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                ref.read(gymNotificationsProvider.notifier).markAsRead(n.id);
+                Navigator.pop(context);
+                OrderTrackingScreen.open(context, initialOrderId: n.actionPayload);
+              },
+              icon: const Icon(Icons.qr_code_2_rounded, size: 16),
+              label: Text('TRACK ORDER & VIEW PICKUP CODE', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold)),
+            )
+          else if (n.type == NotificationType.gatePass)
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.greenAccent,
+                side: const BorderSide(color: Colors.greenAccent),
+                minimumSize: const Size.fromHeight(36),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                ref.read(gymNotificationsProvider.notifier).markAsRead(n.id);
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
+              label: Text('DISMISS GATE ALERT', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold)),
+            )
           else if (n.type == NotificationType.storeProduct)
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(foregroundColor: accent, side: BorderSide(color: accent), minimumSize: const Size.fromHeight(36), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
@@ -122,6 +170,8 @@ class GymNotificationsSheet extends ConsumerWidget {
       case NotificationType.paymentDue: return Icons.warning_amber_rounded;
       case NotificationType.storeProduct: return Icons.local_fire_department_rounded;
       case NotificationType.announcement: return Icons.campaign_rounded;
+      case NotificationType.storeOrder: return Icons.shopping_bag_rounded;
+      case NotificationType.gatePass: return Icons.vpn_key_rounded;
     }
   }
 
@@ -130,6 +180,8 @@ class GymNotificationsSheet extends ConsumerWidget {
       case NotificationType.paymentDue: return Colors.amber;
       case NotificationType.storeProduct: return accent;
       case NotificationType.announcement: return Colors.cyanAccent;
+      case NotificationType.storeOrder: return Colors.greenAccent;
+      case NotificationType.gatePass: return Colors.greenAccent;
     }
   }
 }

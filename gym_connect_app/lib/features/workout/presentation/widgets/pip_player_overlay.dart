@@ -6,12 +6,14 @@ class PipPlayerOverlay extends StatelessWidget {
   final bool isFrontAngle;
   final VoidCallback onToggleAngle;
   final VoidCallback onExpand;
+  final bool hasSideAngle;
 
   const PipPlayerOverlay({
     super.key,
     required this.isFrontAngle,
     required this.onToggleAngle,
     required this.onExpand,
+    this.hasSideAngle = false,
   });
 
   @override
@@ -33,7 +35,7 @@ class PipPlayerOverlay extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.repeat_rounded, color: AppColors.primaryAccent, size: 12),
+                Icon(Icons.repeat_rounded, color: AppColors.primaryAccent, size: 12),
                 const SizedBox(width: 4),
                 Text('PIP SILENT AUTO-LOOP', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
               ],
@@ -46,27 +48,29 @@ class PipPlayerOverlay extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              InkWell(
-                onTap: onToggleAngle,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white24),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.flip_camera_android_rounded, color: Colors.white, size: 12),
-                      const SizedBox(width: 4),
-                      Text(isFrontAngle ? 'SIDE VIEW' : 'FRONT VIEW', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: accent)),
-                    ],
+              if (hasSideAngle) ...[
+                InkWell(
+                  onTap: onToggleAngle,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.75),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.flip_camera_android_rounded, color: Colors.white, size: 12),
+                        const SizedBox(width: 4),
+                        Text(isFrontAngle ? 'SIDE VIEW' : 'FRONT VIEW', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: accent)),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 6),
+                const SizedBox(width: 6),
+              ],
               InkWell(
                 onTap: onExpand,
                 borderRadius: BorderRadius.circular(8),

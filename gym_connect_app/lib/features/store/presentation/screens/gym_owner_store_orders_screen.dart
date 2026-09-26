@@ -32,7 +32,7 @@ class GymOwnerStoreOrdersScreen extends ConsumerWidget {
         color: AppColors.primary,
         onRefresh: () async => ref.invalidate(tenantStoreOrdersProvider(tenantId)),
         child: ordersAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
           error: (err, _) => Center(child: Text('Error loading orders: $err', style: GoogleFonts.inter(color: Colors.white))),
           data: (orders) {
             if (orders.isEmpty) {

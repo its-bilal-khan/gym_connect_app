@@ -36,7 +36,7 @@ class DashboardSidebar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                const Icon(Icons.fitness_center_rounded, color: AppColors.primaryAccent, size: 24),
+                Icon(Icons.fitness_center_rounded, color: AppColors.primaryAccent, size: 24),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(

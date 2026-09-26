@@ -28,6 +28,22 @@ class StaffPosProductTile extends StatelessWidget {
       ),
       child: Row(
         children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Image.network(
+                product.effectiveImageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  color: AppColors.surface,
+                  child: const Icon(Icons.fitness_center_rounded, size: 20, color: AppColors.textSecondary),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

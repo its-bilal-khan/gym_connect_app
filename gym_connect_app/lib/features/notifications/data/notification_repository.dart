@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../auth/presentation/providers/auth_notifier.dart';
+import '../../auth/presentation/providers/auth_state.dart';
+import '../../auth/domain/models/user_role.dart';
 import '../../membership/data/membership_repository.dart';
+import '../../payments/data/payments_repository.dart';
 import '../../store/data/store_repository.dart';
 
-enum NotificationType { paymentDue, storeProduct, announcement }
+enum NotificationType { paymentDue, storeProduct, announcement, storeOrder, gatePass }
 
 class GymNotification {
   final String id;
@@ -24,6 +28,35 @@ class GymNotification {
     this.isRead = false,
     this.actionPayload,
   });
+
+  factory GymNotification.fromJson(Map<String, dynamic> json) {
+    NotificationType parseType(String? t) {
+      switch (t) {
+        case 'paymentDue':
+          return NotificationType.paymentDue;
+        case 'storeOrder':
+          return NotificationType.storeOrder;
+        case 'storeProduct':
+          return NotificationType.storeProduct;
+        case 'gatePass':
+          return NotificationType.gatePass;
+        default:
+          return NotificationType.announcement;
+      }
+    }
+
+    return GymNotification(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      message: json['message']?.toString() ?? '',
+      type: parseType(json['type']?.toString()),
+      timestamp: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      isRead: json['is_read'] as bool? ?? false,
+      actionPayload: json['action_payload']?.toString(),
+    );
+  }
 
   GymNotification copyWith({bool? isRead}) {
     return GymNotification(
@@ -50,6 +83,20 @@ final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
 
 final gymNotificationsProvider = NotifierProvider<GymNotificationsNotifier, List<GymNotification>>(GymNotificationsNotifier.new);
 
+class LiveNotificationToastNotifier extends Notifier<GymNotification?> {
+  @override
+  GymNotification? build() => null;
+
+  void show(GymNotification notification) {
+    state = notification;
+  }
+}
+
+/// Holds only live/active notifications triggered during the active user session
+/// so historical background fetches do NOT pop up unwanted SnackBars.
+final liveNotificationToastProvider =
+    NotifierProvider<LiveNotificationToastNotifier, GymNotification?>(LiveNotificationToastNotifier.new);
+
 final unreadNotificationsCountProvider = Provider<int>((ref) {
   final list = ref.watch(gymNotificationsProvider);
   return list.where((n) => !n.isRead).length;
@@ -64,8 +111,20 @@ class GymNotificationsNotifier extends Notifier<List<GymNotification>> {
 
   Future<void> loadNotifications() async {
     final repo = ref.read(notificationRepositoryProvider);
-    final list = await repo.fetchNotifications();
-    state = list;
+    final fetched = await repo.fetchNotifications();
+    final fetchedIds = fetched.map((n) => n.id).toSet();
+    final retained = state.where((n) => !fetchedIds.contains(n.id)).toList();
+    state = [...retained, ...fetched];
+  }
+
+  void pushNotification(GymNotification notification, {bool showToast = true}) {
+    state = [
+      notification,
+      ...state.where((n) => n.id != notification.id),
+    ];
+    if (showToast) {
+      ref.read(liveNotificationToastProvider.notifier).show(notification);
+    }
   }
 
   void markAsRead(String id) {
@@ -73,10 +132,12 @@ class GymNotificationsNotifier extends Notifier<List<GymNotification>> {
       for (final n in state)
         if (n.id == id) n.copyWith(isRead: true) else n,
     ];
+    ref.read(notificationRepositoryProvider).markAsReadInDb(id);
   }
 
   void markAllAsRead() {
     state = [for (final n in state) n.copyWith(isRead: true)];
+    ref.read(notificationRepositoryProvider).markAllAsReadInDb();
   }
 }
 
@@ -86,54 +147,125 @@ class NotificationRepository {
 
   const NotificationRepository(this.supabase, this._ref);
 
+  /// Fetches ONLY real, authentic notifications from live Supabase tables.
+  /// Zero fake, dummy, or hardcoded mock notifications.
   Future<List<GymNotification>> fetchNotifications() async {
     final list = <GymNotification>[];
 
-    // 1. Check pending invoice dues
-    try {
-      final invoice = await _ref.read(membershipRepositoryProvider).fetchPendingInvoice();
-      if (invoice != null && invoice.dueAmount > 0) {
-        list.add(GymNotification(
-          id: 'notif-due-${invoice.id}',
-          title: 'Membership Dues Due Tomorrow',
-          message: 'Your monthly renewal of PKR ${invoice.dueAmount.toInt()} is pending. Pay now to prevent gate lockout.',
-          type: NotificationType.paymentDue,
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          actionPayload: invoice.id,
-        ));
+    final authState = _ref.read(authNotifierProvider);
+    final activeRole = (authState is AuthAuthenticated) ? authState.activeRole : UserRole.member;
+    final profileUserId = (authState is AuthAuthenticated) ? authState.profile.id : '';
+    final tenantId = (authState is AuthAuthenticated) ? (authState.profile.tenantId ?? '') : '';
+    final effectiveUserId = (supabase?.auth.currentUser?.id.isNotEmpty == true)
+        ? supabase!.auth.currentUser!.id
+        : profileUserId;
+
+    // 1. Fetch real notifications from Supabase PostgreSQL table
+    if (supabase != null && effectiveUserId.isNotEmpty) {
+      try {
+        var query = supabase!.from('notifications').select();
+        if (tenantId.isNotEmpty) {
+          query = query.or('user_id.eq.$effectiveUserId,and(user_id.is.null,tenant_id.eq.$tenantId)');
+        } else {
+          query = query.eq('user_id', effectiveUserId);
+        }
+        final res = await query.order('created_at', ascending: false).limit(20);
+        for (final row in (res as List)) {
+          list.add(GymNotification.fromJson(row as Map<String, dynamic>));
+        }
+      } catch (e) {
+        debugPrint('NotificationRepository: database notifications fetch error: $e');
       }
-    } catch (e) {
-      debugPrint('NotificationRepository: check dues error: $e');
     }
 
-    // 2. Check store products
-    try {
-      final products = await _ref.read(storeProductsProvider.future);
-      if (products.isNotEmpty) {
-        final top = products.first;
-        list.add(GymNotification(
-          id: 'notif-prod-${top.id}',
-          title: '🔥 New Arrival at Front Desk',
-          message: '${top.name} is now in stock for PKR ${top.price.toInt()}. Tap to view details and reserve.',
-          type: NotificationType.storeProduct,
-          timestamp: DateTime.now().subtract(const Duration(hours: 5)),
-          actionPayload: top.id,
-        ));
+    // 2. Check pending invoice dues ONLY if a real unpaid invoice exists in Supabase
+    if (activeRole == UserRole.member) {
+      try {
+        final invoice = await _ref.read(membershipRepositoryProvider).fetchPendingInvoice();
+        if (invoice != null && invoice.dueAmount > 0) {
+          list.add(GymNotification(
+            id: 'notif-due-${invoice.id}',
+            title: 'Membership Dues Pending',
+            message: 'Your monthly renewal of PKR ${invoice.dueAmount.toInt()} is pending. Pay now to prevent gate lockout.',
+            type: NotificationType.paymentDue,
+            timestamp: invoice.createdAt ?? DateTime.now(),
+            actionPayload: invoice.id,
+          ));
+        }
+      } catch (e) {
+        debugPrint('NotificationRepository: check dues error: $e');
       }
-    } catch (e) {
-      debugPrint('NotificationRepository: store products error: $e');
     }
 
-    // 3. Facility Announcement
-    list.add(GymNotification(
-      id: 'notif-gym-hours',
-      title: 'Extended Evening Hours',
-      message: 'Peak hours extended until 11:30 PM this weekend with certified trainers on floor.',
-      type: NotificationType.announcement,
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
-      isRead: true,
-    ));
+    // 3. For Gym Owner & Staff: Check real pending member payment receipts waiting for review
+    if (activeRole == UserRole.owner || activeRole == UserRole.staff) {
+      try {
+        if (tenantId.isNotEmpty) {
+          final pendingProofs = await _ref.read(paymentsRepositoryProvider).fetchPendingPayments(tenantId);
+          if (pendingProofs.isNotEmpty) {
+            list.add(GymNotification(
+              id: 'notif-pending-receipts-${pendingProofs.length}',
+              title: 'Pending Member Payment Slips',
+              message: '${pendingProofs.length} manual transfer receipt(s) waiting for verification in your Executive Portal.',
+              type: NotificationType.announcement,
+              timestamp: pendingProofs.first.createdAt,
+            ));
+          }
+        }
+      } catch (e) {
+        debugPrint('NotificationRepository: check owner pending proofs error: $e');
+      }
+    }
+
+    // 4. For Members: Check real store customer orders ready for pickup
+    if (activeRole == UserRole.member && effectiveUserId.isNotEmpty) {
+      try {
+        final orders = await _ref.read(storeRepositoryProvider).fetchCustomerOrders(effectiveUserId);
+        for (final o in orders.take(6)) {
+          final shortId = o.id.length > 6 ? o.id.substring(0, 6).toUpperCase() : o.id.toUpperCase();
+          if (o.orderStatus == 'ready_for_pickup') {
+            list.add(GymNotification(
+              id: 'notif-order-ready-${o.id}',
+              title: '🛒 Order Ready for Pickup! (Code: ${o.pickupCode})',
+              message: 'Your order #$shortId (${o.items.length} items • PKR ${o.totalAmount.toInt()}) is ready! Show Counter Pickup Code ${o.pickupCode} at the front desk.',
+              type: NotificationType.storeOrder,
+              timestamp: o.createdAt,
+              actionPayload: o.id,
+            ));
+          }
+        }
+      } catch (e) {
+        debugPrint('NotificationRepository: store orders check error: $e');
+      }
+    }
+
+    // Sort real notifications chronologically (latest first)
+    list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
     return list;
+  }
+
+  Future<void> markAsReadInDb(String id) async {
+    if (supabase == null) return;
+    try {
+      // If it's a UUID, update PostgreSQL notifications table
+      if (RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(id)) {
+        await supabase!.from('notifications').update({'is_read': true}).eq('id', id);
+      }
+    } catch (e) {
+      debugPrint('NotificationRepository: markAsReadInDb error: $e');
+    }
+  }
+
+  Future<void> markAllAsReadInDb() async {
+    if (supabase == null) return;
+    try {
+      final user = supabase!.auth.currentUser;
+      if (user != null) {
+        await supabase!.from('notifications').update({'is_read': true}).eq('user_id', user.id);
+      }
+    } catch (e) {
+      debugPrint('NotificationRepository: markAllAsReadInDb error: $e');
+    }
   }
 }

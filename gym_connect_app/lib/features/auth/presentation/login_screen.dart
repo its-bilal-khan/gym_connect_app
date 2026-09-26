@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
-import '../domain/models/user_role.dart';
 import 'providers/auth_notifier.dart';
 import 'providers/auth_state.dart';
 import 'widgets/login_form.dart';
@@ -86,24 +85,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     passwordController: _passwordController,
                     isLoading: isLoading,
                     onLogin: _handleLogin,
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: () {
-                        ref.read(authNotifierProvider.notifier).switchActiveRole(UserRole.owner);
-                      },
-                      icon: const Icon(Icons.rocket_launch_rounded, size: 16, color: AppColors.primaryAccent),
-                      label: Text(
-                        'EXPLORE DEMO SHELL (OWNER MODE)',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryAccent,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
                   ),
                 ],
               ),

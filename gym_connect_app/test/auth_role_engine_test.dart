@@ -8,6 +8,7 @@ import 'package:gym_connect_app/features/navigation/presentation/role_navigation
 import 'package:gym_connect_app/features/navigation/presentation/widgets/adaptive_sidebar.dart';
 import 'package:gym_connect_app/features/navigation/presentation/widgets/glass_bottom_nav.dart';
 import 'package:gym_connect_app/features/navigation/presentation/widgets/shell_app_bar.dart';
+import 'package:gym_connect_app/features/staff/presentation/desktop/desktop_staff_pos_workstation_view.dart';
 import 'package:gym_connect_app/features/shells/member/presentation/member_shell_view.dart';
 import 'package:gym_connect_app/features/shells/owner/presentation/owner_shell_view.dart';
 import 'package:gym_connect_app/features/shells/staff/presentation/staff_shell_view.dart';
@@ -15,7 +16,8 @@ import 'package:gym_connect_app/features/shells/staff/presentation/staff_shell_v
 void main() {
   group('UserRole Engine Tests', () {
     test('UserRole.fromString correctly parses all role variations', () {
-      expect(UserRole.fromString('super_admin'), UserRole.owner);
+      expect(UserRole.fromString('super_admin'), UserRole.superAdmin);
+      expect(UserRole.fromString('superadmin'), UserRole.superAdmin);
       expect(UserRole.fromString('gym_owner'), UserRole.owner);
       expect(UserRole.fromString('owner'), UserRole.owner);
       expect(UserRole.fromString('staff'), UserRole.staff);
@@ -26,7 +28,8 @@ void main() {
       expect(UserRole.fromString('unknown_role'), UserRole.member);
     });
 
-    test('UserRole canSwitchRoles grants privileges to Owner and Staff only', () {
+    test('UserRole canSwitchRoles grants privileges to SuperAdmin, Owner and Staff only', () {
+      expect(UserRole.superAdmin.canSwitchRoles, isTrue);
       expect(UserRole.owner.canSwitchRoles, isTrue);
       expect(UserRole.staff.canSwitchRoles, isTrue);
       expect(UserRole.member.canSwitchRoles, isFalse);
@@ -70,8 +73,8 @@ void main() {
       expect(staffTabs.map((t) => t.id), containsAll(['reception', 'members', 'pos', 'shift']));
 
       final memberTabs = RoleNavigationConfig.getTabsForRole(UserRole.member);
-      expect(memberTabs.length, 4);
-      expect(memberTabs.map((t) => t.id), containsAll(['daily_action', 'workout_hub', 'pass', 'store_profile']));
+      expect(memberTabs.length, 5);
+      expect(memberTabs.map((t) => t.id), containsAll(['daily_action', 'workout_hub', 'tools', 'pass', 'store_profile']));
     });
   });
 
@@ -128,7 +131,7 @@ void main() {
 
       expect(find.byType(AdaptiveSidebar), findsOneWidget);
       expect(find.byType(GlassBottomNav), findsNothing);
-      expect(find.byType(StaffShellView), findsOneWidget);
+      expect(find.byType(DesktopStaffPosWorkstationView), findsOneWidget);
     });
 
     testWidgets('renders MemberShellView when active role is Member', (tester) async {

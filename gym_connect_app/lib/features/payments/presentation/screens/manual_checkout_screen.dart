@@ -123,7 +123,7 @@ class _ManualCheckoutScreenState extends ConsumerState<ManualCheckoutScreen> {
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded, color: Colors.white), onPressed: () => Navigator.pop(context)),
       ),
       body: settingsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, _) => ManualCheckoutBody(
           settings: null,
           amount: widget.amount,

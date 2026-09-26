@@ -2,6 +2,12 @@
 
 ## 1. Zero Hardcoded Fake / Mock Data (STRICT)
 - **NEVER** hardcode fake, dummy, or mock data directly inside Dart/Flutter code files (e.g., hardcoded products lists, fake reviews, static user subscriptions, fake transformation stories).
+- **Zero Dummy Notifications & Zero Fake Announcements:**
+  - All in-app alerts, notifications, and announcements **MUST** originate from live database records (`notifications`, real unpaid `invoices`, real `payment_proofs` pending owner review, or real `store_orders`).
+  - **NEVER** hardcode fake facility announcements (e.g. fake extended hours) or fake store product arrival alerts in notification repositories.
+  - **NEVER** include simulation or test buttons (e.g. "TEST ALERT" or fake "SHAKE" simulator buttons) that push dummy items into the notification stream.
+  - When no real notifications exist, the list **MUST** remain clean and empty (`[]`).
+  - Keep **NOTHING** dummy anywhere in the app unless explicitly requested by the user.
 - All application data **MUST** be fetched from and written to live Supabase database tables via dedicated repositories and Riverpod providers.
 - If initial/sample data is needed for development or onboarding, it **MUST** be injected into the PostgreSQL database using SQL seed scripts (`.sql` files).
 - Even database seed data **MUST** be realistic, authentic, and professional (real gym supplements, realistic Pakistani & international pricing, authentic transformation protocols)—never cheap or unrealistic placeholder text.
@@ -17,3 +23,34 @@
 - **Tokens:** Strictly use `flutter_secure_storage` for session tokens.
 - **Secrets:** Never commit or hardcode secrets in source code; use `.env`.
 - **State Management:** Separate business logic and database queries from UI using Riverpod.
+
+## 4. Platform Separation & Device Architecture (STRICT)
+- **Desktop / Web App (`width >= 800px`):**
+  - **Purpose:** Dedicated Enterprise Gym Operations & Full POS Workstation.
+  - **Primary Audiences:** Gym Owner, Staff / Receptionist, Super Admin.
+  - **UI Standard:** Professional multi-column desktop layout (metrics grid, data tables, split-screen POS register with right-side live cart drawer, Workout Protocol Studio). NEVER stretch single-column mobile widgets across a widescreen monitor.
+  - **No Phone Hardware Gimmicks on Desktop:** Never render phone-specific features (e.g., pedometer step counters, phone-shaking gestures, mobile gate pass cards) as primary desktop screens.
+  - **Member & Guest on Desktop:** Display a clean, professional Desktop Member Portal with membership status, payment history, and a clear prompt that mobile workouts, QR gate pass, and step tracking belong on the iOS/Android mobile app.
+- **Mobile App (`width < 800px`):**
+  - **Purpose:** Member Super App (Dynamic QR gate pass, Health Connect pedometer, AI workout coach) + Gym Owner Mobile Lite (quick revenue glance and proof-of-payment approval notifications).
+  - **Strict Lightweight Rule:** NEVER bloat the mobile app with full desktop POS terminals, heavy multi-day workout studio builders, or large inventory audits. Mobile must remain fast, snappy, and thumb-friendly.
+
+## 5. Dual-View Listing Standard: Grid & List Views (STRICT)
+- **Wherever items, cards, or entities are listed in the app** (e.g. Workout Protocol Studio exercises, Exercise Video Management Studio, Exercise Catalog pickers, Store Products catalog, Member directory, Staff rosters):
+  - **MUST Provide Two Views:**
+    1. **Grid View (`Icons.grid_view_rounded`):** Responsive multi-column layout showing rich dashboard cards, tags, badges, and media previews.
+    2. **List View (`Icons.view_list_rounded`):** High-density, horizontal structured row/card layout for linear reading, inline parameters editing, and reordering.
+  - **View Toggle Switch:** Always provide a sleek segmented toggle control (`List` / `Grid`) in the section toolbar or header so users can toggle between Grid View and List View seamlessly.
+  - Never force only a single listing layout when presenting multi-item collections.
+
+## 6. Runtime Dynamic Theme Accent Detection (STRICT)
+- **Zero Static Color Hardcoding for Accents:**
+  - **NEVER** hardcode static neon green (`#CCFF00`) or fixed colors into widget trees, borders, icons, buttons, or badges.
+- **Dynamic Runtime Resolution:**
+  - Whenever ANY module, widget, dialog, or screen is developed, it **MUST** dynamically resolve and use the currently selected theme accent color at runtime via:
+    1. `Theme.of(context).colorScheme.primary` or `AppColors.accent(context)`
+    2. Or `AppColors.primary` / `AppColors.primaryAccent` (which dynamically returns the active tenant preset color updated in real-time by `appThemeNotifierProvider`).
+- **Universal Real-Time Reflection:**
+  - When a gym owner/tenant selects a theme color (Neon Volt, Electric Blue, Soft Yellow, or Lavender), all modules across the application (Dashboard metrics, POS workstations, Workout Protocol Studio, Store catalog, Dialogs, Check-in, Khata) **MUST** immediately reflect the selected color in real-time.
+
+

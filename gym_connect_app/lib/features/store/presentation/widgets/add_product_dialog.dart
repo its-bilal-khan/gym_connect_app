@@ -146,7 +146,7 @@ class _AddProductDialogState extends ConsumerState<AddProductDialog> {
               : Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.add_photo_alternate_rounded, color: AppColors.primary, size: 28),
+                    Icon(Icons.add_photo_alternate_rounded, color: AppColors.primary, size: 28),
                     const SizedBox(height: 4),
                     Text('Tap to select photo (gallery)', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
                   ],

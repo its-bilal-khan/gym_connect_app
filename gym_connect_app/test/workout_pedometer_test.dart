@@ -403,6 +403,8 @@ void main() {
       name: 'Barbell Bench Press',
       targetMuscle: 'Chest',
       equipment: 'Barbell',
+      videoUrl: 'https://cdn.example.com/bench.mp4',
+      sideVideoUrl: 'https://cdn.example.com/demo.mp4',
       tips: 'Tuck elbows and touch mid-chest.',
     );
 

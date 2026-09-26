@@ -10,6 +10,8 @@ import 'gym_review_dialog.dart';
 import '../../../../store/presentation/in_gym_store_screen.dart';
 import '../../../../notifications/data/notification_repository.dart';
 import '../../../../notifications/presentation/widgets/gym_notifications_sheet.dart';
+import '../../../../workout/presentation/providers/fitness_profile_provider.dart';
+import '../../../../workout/presentation/providers/workout_notifier.dart';
 import 'pay_dues_sheet.dart';
 
 class MemberProfileTab extends ConsumerWidget {
@@ -80,15 +82,38 @@ class MemberProfileTab extends ConsumerWidget {
               },
             ),
             const SizedBox(height: 10),
-            ListTile(
-              tileColor: AppColors.surface,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: AppColors.border)),
-              leading: const Icon(Icons.accessibility_new_rounded, color: Colors.cyanAccent),
-              title: Text('Body Type & AI Training Goal', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-              subtitle: Text('Tune AI workouts to your genetics', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
-              trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
-              onTap: () => GoalOnboardingDialog.show(context),
-            ),
+            Builder(builder: (context) {
+              final profile = ref.watch(fitnessProfileProvider).asData?.value;
+              final activeType = profile?.bodyType ?? ref.watch(workoutNotifierProvider).activeBodyType;
+              final subText = profile?.bodyTypeSplitDescription ?? 'Tailored AI workouts tuned to genetics';
+
+              return ListTile(
+                tileColor: AppColors.surface,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: accent.withValues(alpha: 0.4))),
+                leading: const Icon(Icons.accessibility_new_rounded, color: Colors.cyanAccent),
+                title: Row(
+                  children: [
+                    Text('Body Type & AI Goal', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: accent.withValues(alpha: 0.5)),
+                      ),
+                      child: Text(
+                        activeType.toUpperCase(),
+                        style: GoogleFonts.oswald(fontSize: 10, fontWeight: FontWeight.bold, color: accent),
+                      ),
+                    ),
+                  ],
+                ),
+                subtitle: Text(subText, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
+                trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                onTap: () => GoalOnboardingDialog.show(context),
+              );
+            }),
             const SizedBox(height: 10),
             ListTile(
               tileColor: AppColors.surface,

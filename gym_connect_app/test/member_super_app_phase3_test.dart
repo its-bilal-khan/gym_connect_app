@@ -239,7 +239,7 @@ void main() {
   });
 
   group('Phase 3 Member Super App - GatePassCard & MemberWorkoutHubTab', () {
-    testWidgets('GatePassCard renders dynamic pass and triggers gate unlock', (tester) async {
+    testWidgets('GatePassCard renders dynamic pass and security controls', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -252,14 +252,8 @@ void main() {
 
       expect(find.text('DEVICE ID LOCKED'), findsOneWidget);
       expect(find.textContaining('PASS TOKEN: GC-'), findsOneWidget);
-      expect(find.text('TEST UNLOCK'), findsOneWidget);
-
-      await tester.tap(find.text('TEST UNLOCK'));
-      await tester.pump();
-      expect(find.text('UNLOCKING...'), findsOneWidget);
-      await tester.pump(const Duration(milliseconds: 1300));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('ESP32 Gate Signal Sent'), findsOneWidget);
+      expect(find.textContaining('Single Device Protected'), findsOneWidget);
+      expect(find.textContaining('Hardware Accelerometer'), findsOneWidget);
     });
 
     testWidgets('MemberWorkoutHubTab displays exercise details and start action', (tester) async {

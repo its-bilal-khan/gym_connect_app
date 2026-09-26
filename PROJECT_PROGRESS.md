@@ -180,6 +180,23 @@
 
 ---
 
+## 🟢 Phase 6: Gym Owner Desktop Workstations & Member Ingestion Hub (100% Complete)
+- [x] **Members Directory & Excel Ingestion Hub [Desktop]:**
+  - **Path:** [DesktopMemberHubScreen](file:///d:/gym/gym_connect_app/lib/features/members/presentation/screens/desktop_member_hub_screen.dart)
+  - **Smart CSV/Excel Parser & UI Column Mapper:** [ExcelImportService](file:///d:/gym/gym_connect_app/lib/features/members/data/excel_import_service.dart) & [ExcelImportDialog](file:///d:/gym/gym_connect_app/lib/features/members/presentation/widgets/excel_import_dialog.dart). Auto-detects headers and gives admin interactive dropdowns to map Code, Name, Phone, Email, Plan, Expiry Date, Dues, and Workout Protocol before importing.
+  - **Duplicate Member Handling:** Provides admin option to "Update & Overwrite" existing records or "Skip Duplicates" without erroring.
+  - **Auto-Account & Credential Engine:** [MemberCredentialsDialog](file:///d:/gym/gym_connect_app/lib/features/members/presentation/widgets/member_credentials_dialog.dart). Direct password generation, copy-to-clipboard, and 1-tap WhatsApp credential dispatch.
+  - **Triple-View Listing Architecture:**
+    - **Data Grid (Table View):** [MemberDataTable](file:///d:/gym/gym_connect_app/lib/features/members/presentation/widgets/member_data_table.dart) for spreadsheet-like sorting, inline dues, and audit rows.
+    - **Cards View:** [MemberGridCard](file:///d:/gym/gym_connect_app/lib/features/members/presentation/widgets/member_grid_card.dart) for visual profiles.
+    - **Density List View:** [MemberListCard](file:///d:/gym/gym_connect_app/lib/features/members/presentation/widgets/member_list_card.dart) for rapid scanning.
+  - **360° Detailed Telemetry Toggle:** [MemberDeepInsightsBanner](file:///d:/gym/gym_connect_app/lib/features/members/presentation/widgets/member_deep_insights_banner.dart) reveals live workout protocol (e.g. Mesomorph V-Taper, Day 3), gym attendance streak (🔥 14 Days), last gate scan device, and financial health.
+  - **Freeze / Unfreeze Membership:** [FreezeMembershipDialog](file:///d:/gym/gym_connect_app/lib/features/members/presentation/widgets/freeze_membership_dialog.dart). Freezes active membership with reason (Medical / Travel) to preserve paid days.
+  - **Actionable Expiry Alerts:** Highlights members expiring within 7 days and provides 1-tap WhatsApp renewal reminder.
+  - **Access & Audit Security:** Logs ESP32 gate relay scans and staff update attribution.
+
+---
+
 ## 🛠️ Database Migrations & SQL Seed Instructions
 
 ### A. Dedicated Migration File (For Existing Databases)

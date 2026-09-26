@@ -124,7 +124,7 @@ class _GymOwnerPaymentApprovalsScreenState extends ConsumerState<GymOwnerPayment
         color: AppColors.primary,
         onRefresh: () async => ref.invalidate(pendingPaymentsProvider(widget.tenantId)),
         child: pendingAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
           error: (err, _) => Center(child: Text('Error loading payments: $err', style: GoogleFonts.inter(color: Colors.white))),
           data: (payments) {
             if (payments.isEmpty) {
@@ -136,7 +136,7 @@ class _GymOwnerPaymentApprovalsScreenState extends ConsumerState<GymOwnerPayment
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.check_circle_outline_rounded, size: 64, color: AppColors.primary),
+                        Icon(Icons.check_circle_outline_rounded, size: 64, color: AppColors.primary),
                         const SizedBox(height: 16),
                         Text('ALL CAUGHT UP!', style: GoogleFonts.oswald(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                         const SizedBox(height: 6),

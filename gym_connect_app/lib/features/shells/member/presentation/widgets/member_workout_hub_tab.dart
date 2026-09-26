@@ -2,11 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../auth/domain/models/user_role.dart';
+import '../../../../auth/presentation/providers/auth_notifier.dart';
+import '../../../../auth/presentation/providers/auth_state.dart';
 import '../../../../workout/domain/models/workout_models.dart';
 import '../../../../workout/presentation/active_workout_screen.dart';
 import '../../../../workout/presentation/providers/workout_notifier.dart';
+import '../../../../workout/presentation/widgets/attach_exercise_video_sheet.dart';
 import '../../../../workout/presentation/widgets/fullscreen_video_dialog.dart';
 import '../../../../workout/presentation/widgets/ninety_day_calendar_widget.dart';
+
+import '../../../../workout/presentation/providers/body_types_catalog_provider.dart';
+import '../../../../workout/presentation/widgets/body_type_shape_gallery_dialog.dart';
 
 class MemberWorkoutHubTab extends ConsumerWidget {
   const MemberWorkoutHubTab({super.key});
@@ -14,11 +21,27 @@ class MemberWorkoutHubTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final workoutState = ref.watch(workoutNotifierProvider);
+    final catalogAsync = ref.watch(bodyTypesCatalogProvider);
+    final authState = ref.watch(authNotifierProvider);
+    final canEdit = (authState is AuthAuthenticated) &&
+        (authState.activeRole == UserRole.superAdmin || authState.activeRole == UserRole.owner);
     final routine = workoutState.routineDay;
     final dayNum = routine?.dayNumber ?? 1;
     final bottomInset = MediaQuery.of(context).padding.bottom;
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
+
+    final currentInfo = catalogAsync.asData?.value.firstWhere(
+      (b) => b.key == workoutState.activeBodyType,
+      orElse: () => BodyTypeInfo(
+        key: workoutState.activeBodyType,
+        title: workoutState.activeBodyType.toUpperCase(),
+        subtitle: 'Protocol Split',
+        description: '',
+        targetPhysique: 'Outcome: Sculpted Physique Blueprint',
+        defaultImageAsset: 'assets/images/${workoutState.activeBodyType}.jpg',
+      ),
+    );
 
     return SafeArea(
       bottom: false,
@@ -38,9 +61,39 @@ class MemberWorkoutHubTab extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'DAY $dayNum OF 90',
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: accent),
+                      Row(
+                        children: [
+                          Text(
+                            'DAY $dayNum OF 90',
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: accent),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: currentInfo != null
+                                ? () => BodyTypeShapeGalleryDialog.show(context, info: currentInfo)
+                                : null,
+                            borderRadius: BorderRadius.circular(4),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: accent.withValues(alpha: 0.4)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.photo_library_rounded, size: 10, color: accent),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${workoutState.activeBodyType.toUpperCase()} • TARGET SHAPES',
+                                    style: GoogleFonts.oswald(fontSize: 10, fontWeight: FontWeight.bold, color: accent),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -119,7 +172,7 @@ class MemberWorkoutHubTab extends ConsumerWidget {
                 style: GoogleFonts.oswald(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5),
               ),
               const SizedBox(height: 10),
-              ...routine.exercises.map((wde) => _buildExerciseCard(context, wde, accent)),
+              ...routine.exercises.map((wde) => _buildExerciseCard(context, wde, accent, canEdit)),
             ],
             SizedBox(height: 110 + bottomInset),
           ],
@@ -128,7 +181,7 @@ class MemberWorkoutHubTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildExerciseCard(BuildContext context, WorkoutDayExercise wde, Color accent) {
+  Widget _buildExerciseCard(BuildContext context, WorkoutDayExercise wde, Color accent, bool canEdit) {
     final ex = wde.exercise;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -196,12 +249,33 @@ class MemberWorkoutHubTab extends ConsumerWidget {
               ],
             ),
           ),
-          if (ex.videoUrl != null)
-            IconButton(
-              icon: const Icon(Icons.play_circle_outline_rounded, color: Colors.white70, size: 26),
-              tooltip: 'Form Video Preview',
-              onPressed: () => FullscreenVideoDialog.show(context, ex),
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (ex.videoUrl != null && ex.videoUrl!.isNotEmpty)
+                IconButton(
+                  icon: Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 28),
+                  tooltip: 'Watch Form Video',
+                  onPressed: () => FullscreenVideoDialog.show(context, ex),
+                ),
+              if (canEdit)
+                IconButton(
+                  icon: Icon(
+                    ex.videoUrl != null && ex.videoUrl!.isNotEmpty
+                        ? Icons.edit_note_rounded
+                        : Icons.add_link_rounded,
+                    color: ex.videoUrl != null && ex.videoUrl!.isNotEmpty
+                        ? Colors.white54
+                        : AppColors.primary,
+                    size: 22,
+                  ),
+                  tooltip: ex.videoUrl != null && ex.videoUrl!.isNotEmpty
+                      ? 'Edit / Update Video URL'
+                      : 'Attach Exercise Video URL',
+                  onPressed: () => AttachExerciseVideoSheet.show(context, ex),
+                ),
+            ],
+          ),
         ],
       ),
     );

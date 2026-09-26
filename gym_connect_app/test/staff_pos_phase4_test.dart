@@ -12,6 +12,7 @@ import 'package:gym_connect_app/features/staff/presentation/widgets/staff_check_
 import 'package:gym_connect_app/features/staff/presentation/widgets/staff_pos_register_sheet.dart';
 import 'package:gym_connect_app/features/staff/presentation/widgets/staff_walk_in_dialog.dart';
 import 'package:gym_connect_app/features/staff/presentation/widgets/thermal_receipt_dialog.dart';
+import 'package:gym_connect_app/features/staff/presentation/desktop/widgets/desktop_pos_product_grid.dart';
 import 'package:gym_connect_app/features/store/data/store_repository.dart';
 
 void main() {
@@ -213,6 +214,39 @@ void main() {
       expect(find.text('SHIFT TALLY & Z-REPORT'), findsOneWidget);
       expect(find.text('Current Shift Tally'), findsOneWidget);
       expect(find.text('ACTIVE SHIFT METRICS'), findsOneWidget);
+    });
+  });
+
+  group('Phase 4 Desktop POS Product Grid Tests', () {
+    testWidgets('DesktopPosProductGrid renders product images, stock badge, and in-cart counter', (tester) async {
+      const sampleProducts = [
+        StoreProduct(
+          id: 'prod-001',
+          name: 'Gold Standard 100% Whey',
+          price: 18500,
+          category: 'Supplements',
+          stockQuantity: 15,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DesktopPosProductGrid(
+              products: sampleProducts,
+              cart: const {'prod-001': 2},
+              onAdd: (_) {},
+              onRemove: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Gold Standard 100% Whey'), findsOneWidget);
+      expect(find.text('Stock: 15'), findsOneWidget);
+      expect(find.text('x2 IN CART'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
     });
   });
 }

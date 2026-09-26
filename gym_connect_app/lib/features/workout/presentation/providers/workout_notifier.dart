@@ -10,6 +10,7 @@ class WorkoutSessionState {
   final Map<String, List<WorkoutSetRecord>> setsByExercise;
   final bool isSessionActive;
   final bool isCompleted;
+  final String activeBodyType;
 
   const WorkoutSessionState({
     this.routineDay,
@@ -17,6 +18,7 @@ class WorkoutSessionState {
     this.setsByExercise = const {},
     this.isSessionActive = false,
     this.isCompleted = false,
+    this.activeBodyType = 'mesomorph',
   });
 
   double get progressPercentage {
@@ -35,6 +37,7 @@ class WorkoutSessionState {
     Map<String, List<WorkoutSetRecord>>? setsByExercise,
     bool? isSessionActive,
     bool? isCompleted,
+    String? activeBodyType,
   }) {
     return WorkoutSessionState(
       routineDay: routineDay ?? this.routineDay,
@@ -42,6 +45,7 @@ class WorkoutSessionState {
       setsByExercise: setsByExercise ?? this.setsByExercise,
       isSessionActive: isSessionActive ?? this.isSessionActive,
       isCompleted: isCompleted ?? this.isCompleted,
+      activeBodyType: activeBodyType ?? this.activeBodyType,
     );
   }
 }
@@ -49,18 +53,24 @@ class WorkoutSessionState {
 final workoutNotifierProvider = NotifierProvider<WorkoutNotifier, WorkoutSessionState>(WorkoutNotifier.new);
 
 class WorkoutNotifier extends Notifier<WorkoutSessionState> {
+  late WorkoutRepository _repo;
+
   @override
   WorkoutSessionState build() {
-    Future.microtask(() => loadTodayRoutine());
-    return const WorkoutSessionState();
+    _repo = ref.read(workoutRepositoryProvider);
+    final initialRoutine = _repo.getDefaultRoutineSync(dayNumber: 1, bodyType: 'mesomorph');
+    final map = _buildSetsMap(initialRoutine);
+
+    return WorkoutSessionState(
+      routineDay: initialRoutine,
+      activeExerciseIndex: 0,
+      setsByExercise: map,
+      activeBodyType: 'mesomorph',
+    );
   }
 
-  WorkoutRepository get _repo => ref.read(workoutRepositoryProvider);
-
-  Future<void> loadTodayRoutine({int day = 1}) async {
-    final routine = await _repo.getTodayRoutine(dayNumber: day);
+  Map<String, List<WorkoutSetRecord>> _buildSetsMap(WorkoutRoutineDay routine) {
     final map = <String, List<WorkoutSetRecord>>{};
-
     for (final de in routine.exercises) {
       map[de.id] = List.generate(
         de.targetSets,
@@ -72,11 +82,19 @@ class WorkoutNotifier extends Notifier<WorkoutSessionState> {
         ),
       );
     }
+    return map;
+  }
+
+  Future<void> loadTodayRoutine({int day = 1, String? bodyType}) async {
+    final type = bodyType ?? state.activeBodyType;
+    final routine = await _repo.getTodayRoutine(dayNumber: day, bodyType: type);
+    final map = _buildSetsMap(routine);
 
     state = WorkoutSessionState(
       routineDay: routine,
       activeExerciseIndex: 0,
       setsByExercise: map,
+      activeBodyType: type,
     );
   }
 

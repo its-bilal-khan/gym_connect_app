@@ -9,6 +9,7 @@ import '../../../../payments/presentation/screens/gym_owner_payment_approvals_sc
 import '../../../../store/presentation/providers/store_providers.dart';
 import '../../../../store/presentation/screens/gym_owner_product_management_screen.dart';
 import '../../../../store/presentation/screens/gym_owner_store_orders_screen.dart';
+import '../../../../workout/presentation/desktop/desktop_workout_protocol_manager_view.dart';
 
 class OwnerOverviewTab extends ConsumerWidget {
   final UserProfile profile;
@@ -75,6 +76,14 @@ class OwnerOverviewTab extends ConsumerWidget {
               icon: Icons.receipt_long_rounded,
               highlight: pendingPaymentsCount > 0,
               onTap: () => GymOwnerPaymentApprovalsScreen.open(context, tenantId: tenantId),
+            ),
+            const SizedBox(height: 10),
+            _buildActionCard(
+              title: 'WORKOUT PROTOCOL STUDIO [DESKTOP POS]',
+              subtitle: 'Customize body types, 7-day splits & exercises or fall back to platform default',
+              icon: Icons.fitness_center_rounded,
+              highlight: false,
+              onTap: () => DesktopWorkoutProtocolManagerView.open(context, profile: profile),
             ),
             const SizedBox(height: 14),
             const MetricCard(title: 'Monthly Revenue', value: 'PKR 185,000', icon: Icons.attach_money_rounded, subtitle: '+14.2% vs previous month'),

@@ -101,9 +101,9 @@ class _StaffMembersDirectoryTabState extends ConsumerState<StaffMembersDirectory
                   },
                 );
               },
-              loading: () => const Center(
+              loading: () => Center(
                 child: Padding(
-                  padding: EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(24),
                   child: CircularProgressIndicator(color: AppColors.primaryAccent),
                 ),
               ),

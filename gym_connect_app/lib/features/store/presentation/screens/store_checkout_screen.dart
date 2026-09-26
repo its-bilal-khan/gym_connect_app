@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
+import '../../../notifications/data/notification_repository.dart';
 import '../../../payments/data/payments_repository.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../../payments/presentation/widgets/manual_bank_details_card.dart';
@@ -112,6 +113,9 @@ class _StoreCheckoutScreenState extends ConsumerState<StoreCheckoutScreen> {
 
       final pickupCode = 'PK-${1000 + (DateTime.now().millisecondsSinceEpoch % 8999)}';
       final tenantId = widget.allProducts.isNotEmpty ? widget.allProducts.first.tenantId : null;
+      final authState = ref.read(authNotifierProvider);
+      final currentUserId = (authState is AuthAuthenticated) ? authState.profile.id : null;
+
       final orderId = await ref.read(storeRepositoryProvider).createStoreOrder(
             pickupCode: pickupCode,
             totalAmount: widget.totalAmount,
@@ -124,6 +128,7 @@ class _StoreCheckoutScreenState extends ConsumerState<StoreCheckoutScreen> {
             paymentMethod: _paymentMethod,
             paymentReceiptUrl: receiptUrl,
             tenantId: tenantId,
+            userId: currentUserId,
           );
 
       if (orderId == null) throw Exception('Could not place order');
@@ -134,6 +139,18 @@ class _StoreCheckoutScreenState extends ConsumerState<StoreCheckoutScreen> {
         ref.invalidate(tenantStoreOrdersProvider(tenantId));
       }
       ref.invalidate(tenantStoreOrdersProvider(''));
+
+      // Push instant order confirmation notification to member's notification hub
+      ref.read(gymNotificationsProvider.notifier).pushNotification(
+        GymNotification(
+          id: 'notif-order-placed-$orderId',
+          title: '🛒 Order Placed • Code: $pickupCode',
+          message: 'Your order of PKR ${widget.totalAmount.toInt()} has been sent to the front desk. Pickup Code: $pickupCode.',
+          type: NotificationType.storeOrder,
+          timestamp: DateTime.now(),
+          actionPayload: orderId,
+        ),
+      );
 
       if (!mounted) return;
       setState(() => _isPlacing = false);
@@ -283,7 +300,7 @@ class _StoreCheckoutScreenState extends ConsumerState<StoreCheckoutScreen> {
                   ],
                 ),
               ),
-              if (isSelected) const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 18),
+              if (isSelected) Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 18),
             ],
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum UserRole {
+  superAdmin,
   owner,
   staff,
   member,
@@ -10,6 +11,9 @@ enum UserRole {
     if (role == null) return UserRole.member;
     switch (role.toLowerCase().trim()) {
       case 'super_admin':
+      case 'superadmin':
+      case 'platform_admin':
+        return UserRole.superAdmin;
       case 'gym_owner':
       case 'owner':
         return UserRole.owner;
@@ -30,6 +34,8 @@ enum UserRole {
 
   String get dbValue {
     switch (this) {
+      case UserRole.superAdmin:
+        return 'super_admin';
       case UserRole.owner:
         return 'gym_owner';
       case UserRole.staff:
@@ -43,6 +49,8 @@ enum UserRole {
 
   String get displayName {
     switch (this) {
+      case UserRole.superAdmin:
+        return 'Super Admin';
       case UserRole.owner:
         return 'Gym Owner';
       case UserRole.staff:
@@ -56,6 +64,8 @@ enum UserRole {
 
   String get badgeLabel {
     switch (this) {
+      case UserRole.superAdmin:
+        return 'SUPER ADMIN';
       case UserRole.owner:
         return 'OWNER / BOSS';
       case UserRole.staff:
@@ -69,6 +79,8 @@ enum UserRole {
 
   IconData get icon {
     switch (this) {
+      case UserRole.superAdmin:
+        return Icons.hub_rounded;
       case UserRole.owner:
         return Icons.admin_panel_settings_rounded;
       case UserRole.staff:
@@ -80,5 +92,6 @@ enum UserRole {
     }
   }
 
-  bool get canSwitchRoles => this == UserRole.owner || this == UserRole.staff;
+  bool get canSwitchRoles =>
+      this == UserRole.superAdmin || this == UserRole.owner || this == UserRole.staff;
 }

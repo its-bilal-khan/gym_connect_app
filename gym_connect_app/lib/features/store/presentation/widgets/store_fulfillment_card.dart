@@ -87,7 +87,7 @@ class StoreFulfillmentCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 18),
+                  Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 18),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(

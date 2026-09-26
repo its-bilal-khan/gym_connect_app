@@ -93,7 +93,7 @@ class PublicShellView extends StatelessWidget {
                     CircleAvatar(
                       backgroundColor: AppColors.primary.withValues(alpha: 0.15),
                       radius: 22,
-                      child: const Icon(Icons.shopping_bag_rounded, color: AppColors.primary, size: 24),
+                      child: Icon(Icons.shopping_bag_rounded, color: AppColors.primary, size: 24),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -128,7 +128,7 @@ class PublicShellView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.qr_code_scanner_rounded, size: 100, color: AppColors.primaryAccent),
+              Icon(Icons.qr_code_scanner_rounded, size: 100, color: AppColors.primaryAccent),
               const SizedBox(height: 14),
               Text('INSTANT 24-HOUR GUEST PASS', style: GoogleFonts.oswald(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               const SizedBox(height: 6),

@@ -8,6 +8,7 @@ class AiNutritionFuelCard extends StatelessWidget {
   final int proteinGrams;
   final double waterLiters;
   final double bmi;
+  final String bodyTypeLabel;
   final VoidCallback? onRecalibrate;
 
   const AiNutritionFuelCard({
@@ -16,6 +17,7 @@ class AiNutritionFuelCard extends StatelessWidget {
     this.proteinGrams = 160,
     this.waterLiters = 3.5,
     this.bmi = 24.2,
+    this.bodyTypeLabel = 'MESOMORPH',
     this.onRecalibrate,
   });
 
@@ -51,7 +53,7 @@ class AiNutritionFuelCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('AI NUTRITION & FUEL TARGET', style: GoogleFonts.oswald(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                      Text('BMI: $bmi • Optimized for Hypertrophy', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+                      Text('BMI: $bmi • Optimized for $bodyTypeLabel Protocol', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
                     ],
                   ),
                 ),

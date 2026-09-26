@@ -166,7 +166,7 @@ class _TransformationSpotlightCardState extends ConsumerState<TransformationSpot
                   shape: BoxShape.circle,
                   border: Border.all(color: accent.withValues(alpha: 0.5)),
                 ),
-                child: const Icon(Icons.fitness_center_rounded, color: AppColors.primaryAccent, size: 18),
+                child: Icon(Icons.fitness_center_rounded, color: accent, size: 18),
               ),
               const SizedBox(width: 10),
               Expanded(

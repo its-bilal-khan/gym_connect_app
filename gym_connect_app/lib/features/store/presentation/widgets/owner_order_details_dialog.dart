@@ -149,7 +149,7 @@ class OwnerOrderDetailsDialog extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 18),
+                            Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 18),
                             const SizedBox(width: 8),
                             Text('CUSTOMER DETAILS', style: GoogleFonts.oswald(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
                           ],
@@ -167,7 +167,7 @@ class OwnerOrderDetailsDialog extends StatelessWidget {
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.phone_rounded, color: AppColors.primary, size: 14),
+                                      Icon(Icons.phone_rounded, color: AppColors.primary, size: 14),
                                       const SizedBox(width: 4),
                                       Text(order.customerPhone!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600)),
                                       const SizedBox(width: 4),
@@ -270,7 +270,7 @@ class OwnerOrderDetailsDialog extends StatelessWidget {
                                     height: 220,
                                     width: double.infinity,
                                     fit: BoxFit.contain,
-                                    loadingBuilder: (_, child, p) => p == null ? child : const SizedBox(height: 180, child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
+                                    loadingBuilder: (_, child, p) => p == null ? child : SizedBox(height: 180, child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
                                     errorBuilder: (_, _, _) => Container(
                                       height: 120,
                                       color: Colors.black26,
@@ -284,7 +284,7 @@ class OwnerOrderDetailsDialog extends StatelessWidget {
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        const Icon(Icons.fullscreen_rounded, color: AppColors.primary, size: 18),
+                                        Icon(Icons.fullscreen_rounded, color: AppColors.primary, size: 18),
                                         const SizedBox(width: 6),
                                         Text('TAP TO EXPAND & ZOOM RECEIPT', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
                                       ],
@@ -354,7 +354,7 @@ class OwnerOrderDetailsDialog extends StatelessWidget {
                                       color: AppColors.surface,
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: const Icon(Icons.fitness_center_rounded, color: AppColors.primary, size: 16),
+                                    child: Icon(Icons.fitness_center_rounded, color: AppColors.primary, size: 16),
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
@@ -385,7 +385,7 @@ class OwnerOrderDetailsDialog extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.event_available_rounded, color: AppColors.primary, size: 20),
+                          Icon(Icons.event_available_rounded, color: AppColors.primary, size: 20),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -417,7 +417,7 @@ class OwnerOrderDetailsDialog extends StatelessWidget {
                     label: Text('SCHEDULE READY TIME', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
+                      side: BorderSide(color: AppColors.primary),
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),

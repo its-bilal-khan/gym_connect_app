@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/domain/models/user_profile.dart';
+import '../../../calculators/presentation/screens/calculators_hub_screen.dart';
 import 'widgets/gate_pass_card.dart';
 import 'widgets/member_profile_tab.dart';
 import 'widgets/member_today_tab.dart';
@@ -24,8 +25,10 @@ class MemberShellView extends ConsumerWidget {
       case 1:
         return const MemberWorkoutHubTab();
       case 2:
-        return _buildGatePassTab(context);
+        return const CalculatorsHubScreen();
       case 3:
+        return _buildGatePassTab(context);
+      case 4:
       default:
         return const MemberProfileTab();
     }

@@ -83,7 +83,7 @@ class _StaffCheckInDialogState extends ConsumerState<StaffCheckInDialog> {
                   hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
                   prefixIcon: const Icon(Icons.qr_code_scanner_rounded, color: Colors.cyanAccent),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.arrow_forward_rounded, color: AppColors.primaryAccent),
+                    icon: Icon(Icons.arrow_forward_rounded, color: AppColors.primaryAccent),
                     onPressed: _processCheckIn,
                   ),
                   filled: true,

@@ -8,4 +8,11 @@ abstract final class AppConstants {
   static const String todayStepsDateKey = 'gymconnect_today_steps_date';
   static const String lastHardwareReadingKey = 'gymconnect_last_hw_reading';
   static const String isPausedKey = 'gymconnect_tracker_is_paused';
+  static const String selectedBodyTypeKey = 'gymconnect_selected_body_type';
+  static const String fitnessGoalKey = 'gymconnect_fitness_goal';
+  static const String lastOrderIdsKey = 'gymconnect_last_order_ids';
+  static const String activeNavIndexKey = 'gymconnect_active_nav_index';
+  static const String activeSubTabKey = 'gymconnect_active_sub_tab';
+  static const String persistedProfileKey = 'gymconnect_persisted_profile';
 }
+

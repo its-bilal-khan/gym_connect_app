@@ -101,7 +101,7 @@ class OwnerOrderCard extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => OwnerOrderScheduleDialog.show(context, order: order, onSchedule: onSchedule),
-                    style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.primary), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                    style: OutlinedButton.styleFrom(side: BorderSide(color: AppColors.primary), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
                     child: Text('SCHEDULE READY TIME', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
                   ),
                 ),

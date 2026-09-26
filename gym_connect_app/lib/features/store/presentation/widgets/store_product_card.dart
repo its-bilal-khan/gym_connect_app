@@ -45,7 +45,7 @@ class StoreProductCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, progress) {
                     if (progress == null) return child;
-                    return const Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)));
+                    return Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)));
                   },
                   errorBuilder: (_, _, _) => const Center(
                     child: Icon(Icons.fitness_center_rounded, color: AppColors.textSecondary, size: 28),

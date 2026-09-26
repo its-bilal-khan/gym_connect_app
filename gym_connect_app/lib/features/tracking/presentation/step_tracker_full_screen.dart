@@ -81,7 +81,7 @@ class _StepTrackerFullScreenState extends ConsumerState<StepTrackerFullScreen> {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.directions_walk_rounded, color: AppColors.primaryAccent, size: 26),
+              Icon(Icons.directions_walk_rounded, color: AppColors.primaryAccent, size: 26),
               const SizedBox(height: 4),
               Text('$steps', style: GoogleFonts.oswald(fontSize: 34, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               Text('GOAL: $_targetGoal', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),

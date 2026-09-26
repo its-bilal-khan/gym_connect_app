@@ -125,7 +125,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             fit: BoxFit.cover,
             loadingBuilder: (context, child, progress) {
               if (progress == null) return child;
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return Center(child: CircularProgressIndicator(color: AppColors.primary));
             },
             errorBuilder: (_, _, _) => Center(
               child: Icon(Icons.fitness_center_rounded, size: 70, color: accent.withValues(alpha: 0.8)),

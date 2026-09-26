@@ -55,7 +55,7 @@ class GymOwnerProductManagementScreen extends ConsumerWidget {
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded, color: Colors.white), onPressed: () => Navigator.pop(context)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),
+            icon: Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),
             tooltip: 'Add Product',
             onPressed: () => AddProductDialog.show(context, tenantId: tenantId),
           ),
@@ -72,7 +72,7 @@ class GymOwnerProductManagementScreen extends ConsumerWidget {
         color: AppColors.primary,
         onRefresh: () async => ref.invalidate(storeProductsProvider),
         child: productsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
           error: (err, _) => Center(child: Text('Error: $err', style: GoogleFonts.inter(color: Colors.white))),
           data: (products) {
             if (products.isEmpty) {
@@ -120,7 +120,7 @@ class GymOwnerProductManagementScreen extends ConsumerWidget {
               width: 54,
               height: 54,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stack) => Container(width: 54, height: 54, color: AppColors.background, child: const Icon(Icons.fitness_center_rounded, color: AppColors.primary, size: 24)),
+              errorBuilder: (context, error, stack) => Container(width: 54, height: 54, color: AppColors.background, child: Icon(Icons.fitness_center_rounded, color: AppColors.primary, size: 24)),
             ),
           ),
           const SizedBox(width: 12),

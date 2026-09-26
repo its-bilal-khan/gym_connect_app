@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/primary_button.dart';
+import '../providers/fitness_profile_provider.dart';
 import '../providers/workout_notifier.dart';
 import 'body_type_selector_list.dart';
 import 'calorie_calculator_sheet.dart';
@@ -29,9 +29,19 @@ class GoalOnboardingDialog extends ConsumerStatefulWidget {
 
 class _GoalOnboardingDialogState extends ConsumerState<GoalOnboardingDialog> {
   String _selectedBodyType = 'mesomorph';
-  final String _initialBodyType = 'mesomorph';
-  final String _selectedGoal = 'muscle_gain';
+  String _initialBodyType = 'mesomorph';
+  String _selectedGoal = 'muscle_gain';
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = ref.read(fitnessProfileProvider).asData?.value;
+    final currentType = profile?.bodyType ?? ref.read(workoutNotifierProvider).activeBodyType;
+    _selectedBodyType = currentType;
+    _initialBodyType = currentType;
+    _selectedGoal = profile?.fitnessGoal ?? 'muscle_gain';
+  }
 
   void _onSaveTapped() {
     if (_selectedBodyType != _initialBodyType) {
@@ -44,22 +54,16 @@ class _GoalOnboardingDialogState extends ConsumerState<GoalOnboardingDialog> {
   Future<void> _persistGoal() async {
     HapticFeedback.mediumImpact();
     setState(() => _isSaving = true);
+
     try {
-      final client = Supabase.instance.client;
-      final userId = client.auth.currentUser?.id;
-      if (userId != null) {
-        await client.from('user_fitness_profiles').upsert({
-          'user_id': userId,
-          'body_type': _selectedBodyType,
-          'fitness_goal': _selectedGoal,
-          'updated_at': DateTime.now().toIso8601String(),
-        });
-      }
+      await ref.read(fitnessProfileProvider.notifier).updateBodyType(
+        _selectedBodyType,
+        goal: _selectedGoal,
+      );
     } catch (e) {
       debugPrint('GoalOnboardingDialog: save error: $e');
     }
 
-    ref.read(workoutNotifierProvider.notifier).loadTodayRoutine(day: 1);
     if (mounted) {
       setState(() => _isSaving = false);
       Navigator.of(context).pop();

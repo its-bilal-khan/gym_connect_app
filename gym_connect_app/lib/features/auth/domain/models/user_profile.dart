@@ -14,6 +14,9 @@ class UserProfile {
   final bool isActive;
   final String tenantName;
   final Color? tenantPrimaryColor;
+  final bool isThemeLocked;
+  final String? pendingThemeRequestColor;
+  final String? pendingThemeRequestReason;
 
   const UserProfile({
     required this.id,
@@ -28,11 +31,17 @@ class UserProfile {
     this.isActive = true,
     this.tenantName = 'GymConnect Partner Gym',
     this.tenantPrimaryColor,
+    this.isThemeLocked = false,
+    this.pendingThemeRequestColor,
+    this.pendingThemeRequestReason,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     Color? parsedColor;
     String gymName = 'GymConnect Partner Gym';
+    bool themeLocked = false;
+    String? pendingColor;
+    String? pendingReason;
 
     final tenantData = json['tenants'];
     if (tenantData is Map<String, dynamic>) {
@@ -40,8 +49,16 @@ class UserProfile {
         gymName = tenantData['name'].toString();
       }
       final branding = tenantData['branding'];
-      if (branding is Map<String, dynamic> && branding['primary_color'] != null) {
-        parsedColor = _parseHexColor(branding['primary_color'].toString());
+      if (branding is Map<String, dynamic>) {
+        if (branding['primary_color'] != null) {
+          parsedColor = _parseHexColor(branding['primary_color'].toString());
+        }
+        themeLocked = branding['theme_locked'] == true;
+        final pendingReq = branding['pending_theme_request'];
+        if (pendingReq is Map<String, dynamic>) {
+          pendingColor = pendingReq['requested_color']?.toString();
+          pendingReason = pendingReq['reason']?.toString();
+        }
       }
     }
 
@@ -58,6 +75,9 @@ class UserProfile {
       isActive: json['is_active'] as bool? ?? true,
       tenantName: gymName,
       tenantPrimaryColor: parsedColor,
+      isThemeLocked: themeLocked,
+      pendingThemeRequestColor: pendingColor,
+      pendingThemeRequestReason: pendingReason,
     );
   }
 
@@ -86,6 +106,9 @@ class UserProfile {
     bool? isActive,
     String? tenantName,
     Color? tenantPrimaryColor,
+    bool? isThemeLocked,
+    String? pendingThemeRequestColor,
+    String? pendingThemeRequestReason,
   }) {
     return UserProfile(
       id: id ?? this.id,
@@ -100,6 +123,9 @@ class UserProfile {
       isActive: isActive ?? this.isActive,
       tenantName: tenantName ?? this.tenantName,
       tenantPrimaryColor: tenantPrimaryColor ?? this.tenantPrimaryColor,
+      isThemeLocked: isThemeLocked ?? this.isThemeLocked,
+      pendingThemeRequestColor: pendingThemeRequestColor ?? this.pendingThemeRequestColor,
+      pendingThemeRequestReason: pendingThemeRequestReason ?? this.pendingThemeRequestReason,
     );
   }
 }

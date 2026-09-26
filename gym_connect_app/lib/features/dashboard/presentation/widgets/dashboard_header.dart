@@ -70,7 +70,7 @@ class DashboardHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircleAvatar(radius: 4, backgroundColor: AppColors.primaryAccent),
+                CircleAvatar(radius: 4, backgroundColor: AppColors.primaryAccent),
                 const SizedBox(width: 6),
                 Text(
                   'ONLINE',

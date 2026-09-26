@@ -111,13 +111,7 @@ class GamificationNotifier extends Notifier<MemberGamificationData> {
       }
     }
 
-    // Default seeded leaderboard rankings for testability
-    return [
-      const LeaderboardEntry(id: 'u-1', name: 'Zaid Khan', streakDays: 14, totalPoints: 1850, rank: 1),
-      const LeaderboardEntry(id: 'u-2', name: 'Bilal Ahmed', streakDays: 11, totalPoints: 1420, rank: 2),
-      LeaderboardEntry(id: state.userId, name: 'You (Champion)', streakDays: state.currentStreakDays, totalPoints: state.totalPoints, rank: 3, isCurrentUser: true),
-      const LeaderboardEntry(id: 'u-4', name: 'Hamza Malik', streakDays: 4, totalPoints: 720, rank: 4),
-      const LeaderboardEntry(id: 'u-5', name: 'Ali Raza', streakDays: 3, totalPoints: 510, rank: 5),
-    ];
+    // No fake fallback data — return empty when no real leaderboard exists.
+    return [];
   }
 }

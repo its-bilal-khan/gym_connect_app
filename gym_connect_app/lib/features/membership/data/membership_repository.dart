@@ -35,6 +35,7 @@ class PendingInvoiceInfo {
   final double dueAmount;
   final String status;
   final String title;
+  final DateTime? createdAt;
 
   const PendingInvoiceInfo({
     required this.id,
@@ -42,6 +43,7 @@ class PendingInvoiceInfo {
     required this.dueAmount,
     required this.status,
     this.title = 'Monthly VIP Membership',
+    this.createdAt,
   });
 
   factory PendingInvoiceInfo.fromJson(Map<String, dynamic> json) {
@@ -51,6 +53,7 @@ class PendingInvoiceInfo {
       dueAmount: (json['due_amount'] as num?)?.toDouble() ?? 5000.0,
       status: json['status'] as String? ?? 'unpaid',
       title: json['customer_name'] != null ? '${json['customer_name']} Dues' : 'Monthly VIP Membership',
+      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null,
     );
   }
 }

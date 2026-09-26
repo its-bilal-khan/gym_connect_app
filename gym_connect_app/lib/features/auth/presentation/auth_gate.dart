@@ -16,13 +16,12 @@ class AuthGate extends ConsumerWidget {
 
     return switch (authState) {
       AuthInitial() => const _AuthSplashView(message: 'CHECKING SECURE SESSION...'),
-      AuthAuthenticating() => const _AuthSplashView(message: 'AUTHENTICATING CREDENTIALS...'),
       AuthAuthenticated(:final profile, :final activeRole) => AdaptiveRoleShell(
           key: ValueKey('shell_${profile.id}_${activeRole.name}'),
           profile: profile,
           activeRole: activeRole,
         ),
-      AuthUnauthenticated() || AuthError() => const LoginScreen(),
+      AuthAuthenticating() || AuthUnauthenticated() || AuthError() => const LoginScreen(),
     };
   }
 }
@@ -54,7 +53,7 @@ class _AuthSplashView extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.fitness_center_rounded,
                 color: AppColors.primaryAccent,
                 size: 48,
@@ -81,7 +80,7 @@ class _AuthSplashView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const SizedBox(
+            SizedBox(
               width: 24,
               height: 24,
               child: CircularProgressIndicator(

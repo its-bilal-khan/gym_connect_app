@@ -82,7 +82,7 @@ class _OwnerOrderScheduleDialogState extends State<OwnerOrderScheduleDialog> {
             const SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: _pickDate,
-              icon: const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
+              icon: Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
               label: Text('DATE: $dateStr', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
               style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.border), padding: const EdgeInsets.symmetric(vertical: 12)),
             ),

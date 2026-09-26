@@ -1469,14 +1469,55 @@ CREATE POLICY "Members manage own gate tokens" ON gate_access_tokens
         (auth_current_role() IN ('gym_owner', 'staff') AND tenant_id = auth_current_tenant_id())
     );
 
+-- 13.9.1 User Fitness Profiles & Goals
+DROP POLICY IF EXISTS "Users can manage their own fitness profile" ON user_fitness_profiles;
+CREATE POLICY "Users can manage their own fitness profile" ON user_fitness_profiles
+    FOR ALL USING (
+        user_id = auth.uid() OR auth_is_super_admin()
+    ) WITH CHECK (
+        user_id = auth.uid() OR auth_is_super_admin()
+    );
+
+DROP POLICY IF EXISTS "Gym staff can view member fitness profiles" ON user_fitness_profiles;
+CREATE POLICY "Gym staff can view member fitness profiles" ON user_fitness_profiles
+    FOR SELECT USING (
+        auth_is_super_admin() OR
+        EXISTS (
+            SELECT 1 FROM profiles 
+            WHERE profiles.id = user_fitness_profiles.user_id 
+            AND profiles.tenant_id = auth_current_tenant_id()
+        )
+    );
+
 -- 13.10 AI Workout Routines & Logs
 DROP POLICY IF EXISTS "Anyone can view exercises" ON exercises;
 CREATE POLICY "Anyone can view exercises" ON exercises
     FOR SELECT USING (is_global = TRUE OR tenant_id = auth_current_tenant_id());
 
 DROP POLICY IF EXISTS "Anyone can view workout routines" ON workout_routines;
-CREATE POLICY "Anyone can view workout routines" ON workout_routines
-    FOR SELECT USING (is_public_preview = TRUE OR tenant_id = auth_current_tenant_id() OR tenant_id IS NULL);
+DROP POLICY IF EXISTS "Authenticated users view workout routines" ON workout_routines;
+DROP POLICY IF EXISTS "Owners and admins manage workout routines" ON workout_routines;
+CREATE POLICY "Authenticated users view workout routines" ON workout_routines
+    FOR SELECT USING (is_public_preview = TRUE OR tenant_id IS NULL OR tenant_id = auth_current_tenant_id() OR auth_is_super_admin() OR auth.role() = 'authenticated');
+CREATE POLICY "Owners and admins manage workout routines" ON workout_routines
+    FOR ALL USING (auth_is_super_admin() OR tenant_id = auth_current_tenant_id() OR (tenant_id IS NULL AND auth_is_super_admin()))
+    WITH CHECK (auth_is_super_admin() OR tenant_id = auth_current_tenant_id() OR (tenant_id IS NULL AND auth_is_super_admin()));
+
+DROP POLICY IF EXISTS "View workout routine days" ON workout_routine_days;
+DROP POLICY IF EXISTS "Manage workout routine days" ON workout_routine_days;
+CREATE POLICY "View workout routine days" ON workout_routine_days
+    FOR SELECT USING (EXISTS (SELECT 1 FROM workout_routines r WHERE r.id = workout_routine_days.routine_id AND (r.is_public_preview = TRUE OR r.tenant_id IS NULL OR r.tenant_id = auth_current_tenant_id() OR auth_is_super_admin() OR auth.role() = 'authenticated')));
+CREATE POLICY "Manage workout routine days" ON workout_routine_days
+    FOR ALL USING (auth_is_super_admin() OR EXISTS (SELECT 1 FROM workout_routines r WHERE r.id = workout_routine_days.routine_id AND (r.tenant_id = auth_current_tenant_id() OR auth_is_super_admin())))
+    WITH CHECK (auth_is_super_admin() OR EXISTS (SELECT 1 FROM workout_routines r WHERE r.id = workout_routine_days.routine_id AND (r.tenant_id = auth_current_tenant_id() OR auth_is_super_admin())));
+
+DROP POLICY IF EXISTS "View workout day exercises" ON workout_day_exercises;
+DROP POLICY IF EXISTS "Manage workout day exercises" ON workout_day_exercises;
+CREATE POLICY "View workout day exercises" ON workout_day_exercises
+    FOR SELECT USING (EXISTS (SELECT 1 FROM workout_routine_days d JOIN workout_routines r ON r.id = d.routine_id WHERE d.id = workout_day_exercises.day_id AND (r.is_public_preview = TRUE OR r.tenant_id IS NULL OR r.tenant_id = auth_current_tenant_id() OR auth_is_super_admin() OR auth.role() = 'authenticated')));
+CREATE POLICY "Manage workout day exercises" ON workout_day_exercises
+    FOR ALL USING (auth_is_super_admin() OR EXISTS (SELECT 1 FROM workout_routine_days d JOIN workout_routines r ON r.id = d.routine_id WHERE d.id = workout_day_exercises.day_id AND (r.tenant_id = auth_current_tenant_id() OR auth_is_super_admin())))
+    WITH CHECK (auth_is_super_admin() OR EXISTS (SELECT 1 FROM workout_routine_days d JOIN workout_routines r ON r.id = d.routine_id WHERE d.id = workout_day_exercises.day_id AND (r.tenant_id = auth_current_tenant_id() OR auth_is_super_admin())));
 
 DROP POLICY IF EXISTS "Members manage own workout logs" ON workout_logs;
 CREATE POLICY "Members manage own workout logs" ON workout_logs

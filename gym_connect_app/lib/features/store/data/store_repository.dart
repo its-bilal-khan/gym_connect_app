@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/services/secure_storage_service.dart';
 
 class StoreProduct {
   final String id;
@@ -32,20 +33,26 @@ class StoreProduct {
   });
 
   String get effectiveImageUrl {
-    if (imageUrl.isNotEmpty) return imageUrl;
-    final cat = category.toLowerCase();
-    if (cat.contains('supplement') || name.toLowerCase().contains('whey')) {
-      return 'https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?auto=format&fit=crop&w=800&q=80';
-    } else if (cat.contains('creatine')) {
-      return 'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=800&q=80';
-    } else if (cat.contains('pre-workout') || name.toLowerCase().contains('c4')) {
-      return 'https://images.unsplash.com/photo-1546483875-ad9014c88eba?auto=format&fit=crop&w=800&q=80';
-    } else if (cat.contains('drink') || cat.contains('shake') || cat.contains('juice')) {
-      return 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=800&q=80';
-    } else if (cat.contains('snack') || cat.contains('bar')) {
-      return 'https://images.unsplash.com/photo-1622484216800-4b2105e4cb31?auto=format&fit=crop&w=800&q=80';
+    final clean = imageUrl.trim();
+    if (clean.isNotEmpty && (clean.startsWith('http://') || clean.startsWith('https://'))) {
+      return clean;
     }
-    return 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80';
+    final cat = category.toLowerCase();
+    final n = name.toLowerCase();
+    if (cat.contains('supplement') || n.contains('whey') || n.contains('protein') || n.contains('nitro') || n.contains('surge')) {
+      return 'https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?auto=format&fit=crop&w=800&q=80';
+    } else if (cat.contains('creatine') || n.contains('creatine')) {
+      return 'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=800&q=80';
+    } else if (cat.contains('pre-workout') || n.contains('c4') || n.contains('pre') || n.contains('energy')) {
+      return 'https://images.unsplash.com/photo-1546483875-ad9014c88eba?auto=format&fit=crop&w=800&q=80';
+    } else if (cat.contains('drink') || cat.contains('shake') || cat.contains('juice') || n.contains('shake') || n.contains('bcaa')) {
+      return 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=800&q=80';
+    } else if (cat.contains('snack') || cat.contains('bar') || n.contains('bar') || n.contains('crunch')) {
+      return 'https://images.unsplash.com/photo-1622484216800-4b2105e4cb31?auto=format&fit=crop&w=800&q=80';
+    } else if (cat.contains('gear') || cat.contains('strap') || n.contains('strap') || n.contains('reaper') || n.contains('pad')) {
+      return 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80';
   }
 
   factory StoreProduct.fromJson(Map<String, dynamic> json) {
@@ -218,7 +225,8 @@ final storeRepositoryProvider = Provider<StoreRepository>((ref) {
   } catch (e) {
     debugPrint('StoreRepository: Supabase client unavailable: $e');
   }
-  return StoreRepository(client);
+  final storage = ref.watch(secureStorageProvider);
+  return StoreRepository(client, storage);
 });
 
 final storeProductsProvider = FutureProvider<List<StoreProduct>>((ref) async {
@@ -228,8 +236,9 @@ final storeProductsProvider = FutureProvider<List<StoreProduct>>((ref) async {
 
 class StoreRepository {
   final SupabaseClient? _supabase;
+  final SecureStorageService _storage;
 
-  const StoreRepository(this._supabase);
+  const StoreRepository(this._supabase, this._storage);
 
   Future<List<StoreProduct>> fetchInGymProducts({String? tenantId}) async {
     final client = _supabase;
@@ -265,11 +274,12 @@ class StoreRepository {
     String paymentMethod = 'manual_transfer',
     String? paymentReceiptUrl,
     String? tenantId,
+    String? userId,
   }) async {
     final client = _supabase;
     if (client == null) return null;
 
-    final userId = client.auth.currentUser?.id;
+    final effectiveUserId = (userId != null && userId.isNotEmpty) ? userId : client.auth.currentUser?.id;
     String effectiveTenantId = tenantId ?? '';
 
     try {
@@ -282,8 +292,8 @@ class StoreRepository {
       }
 
       // 2. Fall back to user profile tenantId
-      if (effectiveTenantId.isEmpty && userId != null) {
-        final profile = await client.from('profiles').select('tenant_id, full_name, phone').eq('id', userId).maybeSingle();
+      if (effectiveTenantId.isEmpty && effectiveUserId != null) {
+        final profile = await client.from('profiles').select('tenant_id, full_name, phone').eq('id', effectiveUserId).maybeSingle();
         effectiveTenantId = profile?['tenant_id'] as String? ?? '';
         customerName ??= profile?['full_name'] as String?;
         deliveryPhone ??= profile?['phone'] as String?;
@@ -297,8 +307,8 @@ class StoreRepository {
 
       final orderRes = await client.from('store_orders').insert({
         'tenant_id': effectiveTenantId,
-        'member_id': userId,
-        'user_id': userId,
+        'member_id': effectiveUserId,
+        'user_id': effectiveUserId,
         'pickup_code': pickupCode,
         'fulfillment_type': fulfillmentType,
         'delivery_address': deliveryAddress,
@@ -314,6 +324,9 @@ class StoreRepository {
       }).select('id').single();
 
       final orderId = orderRes['id'] as String;
+
+      // Persist order ID locally for cross-role customer order tracking & alerts
+      await _storage.savePlacedOrderId(orderId);
 
       final itemsToInsert = <Map<String, dynamic>>[];
       for (final entry in cartItems.entries) {
@@ -340,15 +353,27 @@ class StoreRepository {
 
   Future<List<StoreOrder>> fetchCustomerOrders(String userId) async {
     final client = _supabase;
-    if (client == null || userId.isEmpty) return [];
+    if (client == null) return [];
 
     try {
-      final res = await client
+      final localIds = await _storage.getPlacedOrderIds();
+      var query = client
           .from('store_orders')
-          .select('*, store_order_items(*, products(name, image_url))')
-          .or('user_id.eq.$userId,member_id.eq.$userId')
-          .order('created_at', ascending: false);
+          .select('*, store_order_items(*, products(name, image_url))');
 
+      if (userId.isNotEmpty && localIds.isNotEmpty) {
+        final idsList = localIds.map((id) => '"$id"').join(',');
+        query = query.or('user_id.eq.$userId,member_id.eq.$userId,id.in.($idsList)');
+      } else if (userId.isNotEmpty) {
+        query = query.or('user_id.eq.$userId,member_id.eq.$userId');
+      } else if (localIds.isNotEmpty) {
+        final idsList = localIds.map((id) => '"$id"').join(',');
+        query = query.filter('id', 'in', '($idsList)');
+      } else {
+        return [];
+      }
+
+      final res = await query.order('created_at', ascending: false);
       return (res as List).map((row) => StoreOrder.fromJson(row as Map<String, dynamic>)).toList();
     } catch (e) {
       debugPrint('StoreRepository: fetchCustomerOrders error: $e');

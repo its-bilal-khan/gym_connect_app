@@ -40,6 +40,52 @@ class Exercise {
           const [],
     );
   }
+
+  Exercise copyWith({
+    String? id,
+    String? name,
+    String? targetMuscle,
+    String? equipment,
+    String? difficulty,
+    String? videoUrl,
+    String? sideVideoUrl,
+    String? thumbnailUrl,
+    String? tips,
+    List<String>? instructions,
+  }) {
+    return Exercise(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      targetMuscle: targetMuscle ?? this.targetMuscle,
+      equipment: equipment ?? this.equipment,
+      difficulty: difficulty ?? this.difficulty,
+      videoUrl: videoUrl ?? this.videoUrl,
+      sideVideoUrl: sideVideoUrl ?? this.sideVideoUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      tips: tips ?? this.tips,
+      instructions: instructions ?? this.instructions,
+    );
+  }
+
+  Map<String, dynamic> toJson({String? tenantId, bool isGlobal = true}) {
+    final map = <String, dynamic>{
+      'id': id,
+      'name': name,
+      'target_muscle': targetMuscle,
+      'equipment': equipment,
+      'difficulty': difficulty,
+      'video_url': videoUrl,
+      'side_video_url': sideVideoUrl,
+      'thumbnail_url': thumbnailUrl,
+      'tips': tips,
+      'instructions': instructions,
+      'is_global': isGlobal,
+    };
+    if (tenantId != null) {
+      map['tenant_id'] = tenantId;
+    }
+    return map;
+  }
 }
 
 class WorkoutDayExercise {
@@ -60,6 +106,26 @@ class WorkoutDayExercise {
     this.restSeconds = 60,
     this.notes,
   });
+
+  WorkoutDayExercise copyWith({
+    String? id,
+    Exercise? exercise,
+    int? orderIndex,
+    int? targetSets,
+    String? targetRepsRange,
+    int? restSeconds,
+    String? notes,
+  }) {
+    return WorkoutDayExercise(
+      id: id ?? this.id,
+      exercise: exercise ?? this.exercise,
+      orderIndex: orderIndex ?? this.orderIndex,
+      targetSets: targetSets ?? this.targetSets,
+      targetRepsRange: targetRepsRange ?? this.targetRepsRange,
+      restSeconds: restSeconds ?? this.restSeconds,
+      notes: notes ?? this.notes,
+    );
+  }
 }
 
 class WorkoutRoutineDay {
@@ -79,6 +145,110 @@ class WorkoutRoutineDay {
     required this.muscleGroups,
     this.isRestDay = false,
     this.exercises = const [],
+  });
+
+  WorkoutRoutineDay copyWith({
+    String? id,
+    String? routineId,
+    int? dayNumber,
+    String? title,
+    List<String>? muscleGroups,
+    bool? isRestDay,
+    List<WorkoutDayExercise>? exercises,
+  }) {
+    return WorkoutRoutineDay(
+      id: id ?? this.id,
+      routineId: routineId ?? this.routineId,
+      dayNumber: dayNumber ?? this.dayNumber,
+      title: title ?? this.title,
+      muscleGroups: muscleGroups ?? this.muscleGroups,
+      isRestDay: isRestDay ?? this.isRestDay,
+      exercises: exercises ?? this.exercises,
+    );
+  }
+}
+
+class BodyTypeInfo {
+  final String key; // 'ectomorph', 'mesomorph', 'endomorph'
+  final String title;
+  final String subtitle;
+  final String description;
+  final String targetPhysique;
+  final String? imageUrl;
+  final List<String> galleryImages;
+  final String defaultImageAsset;
+
+  const BodyTypeInfo({
+    required this.key,
+    required this.title,
+    required this.subtitle,
+    required this.description,
+    required this.targetPhysique,
+    this.imageUrl,
+    this.galleryImages = const [],
+    required this.defaultImageAsset,
+  });
+
+  List<String> get allImages {
+    final list = <String>[];
+    if (imageUrl != null && imageUrl!.trim().isNotEmpty) {
+      list.add(imageUrl!.trim());
+    }
+    for (final img in galleryImages) {
+      final clean = img.trim();
+      if (clean.isNotEmpty && !list.contains(clean)) {
+        list.add(clean);
+      }
+    }
+    return list;
+  }
+
+  BodyTypeInfo copyWith({
+    String? title,
+    String? subtitle,
+    String? description,
+    String? targetPhysique,
+    String? imageUrl,
+    List<String>? galleryImages,
+  }) {
+    return BodyTypeInfo(
+      key: key,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      description: description ?? this.description,
+      targetPhysique: targetPhysique ?? this.targetPhysique,
+      imageUrl: imageUrl ?? this.imageUrl,
+      galleryImages: galleryImages ?? this.galleryImages,
+      defaultImageAsset: defaultImageAsset,
+    );
+  }
+}
+
+class FullWeeklyProtocolResult {
+  final String routineId;
+  final String title;
+  final String description;
+  final String bodyType;
+  final String? subtitle;
+  final String? targetPhysique;
+  final String? imageUrl;
+  final List<String> galleryImages;
+  final String? tenantId;
+  final bool isCustomTenantOverride;
+  final List<WorkoutRoutineDay> days;
+
+  const FullWeeklyProtocolResult({
+    required this.routineId,
+    required this.title,
+    required this.description,
+    required this.bodyType,
+    this.subtitle,
+    this.targetPhysique,
+    this.imageUrl,
+    this.galleryImages = const [],
+    this.tenantId,
+    required this.isCustomTenantOverride,
+    required this.days,
   });
 }
 

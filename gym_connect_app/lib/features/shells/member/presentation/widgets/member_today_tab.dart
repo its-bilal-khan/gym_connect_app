@@ -7,6 +7,7 @@ import '../../../../store/presentation/in_gym_store_screen.dart';
 import '../../../../tracking/presentation/providers/step_tracker_notifier.dart';
 import '../../../../tracking/presentation/step_tracker_full_screen.dart';
 import '../../../../workout/presentation/active_workout_screen.dart';
+import '../../../../workout/presentation/providers/fitness_profile_provider.dart';
 import '../../../../workout/presentation/providers/gamification_provider.dart';
 import '../../../../workout/presentation/providers/workout_notifier.dart';
 import '../../../../workout/presentation/widgets/ai_nutrition_fuel_card.dart';
@@ -22,6 +23,8 @@ class MemberTodayTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final workoutState = ref.watch(workoutNotifierProvider);
+    final fitnessProfile = ref.watch(fitnessProfileProvider).asData?.value;
+    final activeType = fitnessProfile?.bodyType ?? workoutState.activeBodyType;
     final stepData = ref.watch(stepTrackerProvider);
     final gamification = ref.watch(gamificationProvider);
     final routine = workoutState.routineDay;
@@ -56,8 +59,14 @@ class MemberTodayTab extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
             ],
-            const AiNutritionFuelCard(),
+            AiNutritionFuelCard(
+              targetCalories: fitnessProfile?.recommendedDailyCalories ?? (activeType == 'ectomorph' ? 2950 : (activeType == 'endomorph' ? 2150 : 2650)),
+              proteinGrams: fitnessProfile?.recommendedProteinGrams ?? (activeType == 'ectomorph' ? 175 : (activeType == 'endomorph' ? 185 : 165)),
+              waterLiters: fitnessProfile?.recommendedWaterLiters ?? (activeType == 'endomorph' ? 4.0 : 3.5),
+              bodyTypeLabel: activeType.toUpperCase(),
+            ),
             const SizedBox(height: 14),
+
             InkWell(
               onTap: () => InGymStoreScreen.open(context),
               borderRadius: BorderRadius.circular(16),
@@ -73,7 +82,7 @@ class MemberTodayTab extends ConsumerWidget {
                     CircleAvatar(
                       backgroundColor: AppColors.primary.withValues(alpha: 0.15),
                       radius: 18,
-                      child: const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 20),
+                      child: Icon(Icons.storefront_rounded, color: AppColors.primary, size: 20),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
