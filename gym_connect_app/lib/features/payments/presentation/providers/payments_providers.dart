@@ -5,6 +5,28 @@ import '../../data/payments_repository.dart';
 import '../../domain/models/payment_submission.dart';
 import '../../domain/models/tenant_payment_settings.dart';
 
+enum PaymentViewMode { grid, list }
+
+final paymentViewModeProvider =
+    NotifierProvider<PaymentViewModeNotifier, PaymentViewMode>(
+  PaymentViewModeNotifier.new,
+);
+
+class PaymentViewModeNotifier extends Notifier<PaymentViewMode> {
+  @override
+  PaymentViewMode build() => PaymentViewMode.grid;
+
+  void toggle() {
+    state = state == PaymentViewMode.grid
+        ? PaymentViewMode.list
+        : PaymentViewMode.grid;
+  }
+
+  void setMode(PaymentViewMode mode) {
+    state = mode;
+  }
+}
+
 /// Provider for a specific tenant's payment settings
 final tenantPaymentSettingsProvider =
     FutureProvider.family<TenantPaymentSettings?, String>((ref, tenantId) async {
