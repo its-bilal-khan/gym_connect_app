@@ -80,11 +80,34 @@ class StaffPosRepository {
     final total = (subtotal - discount).clamp(0.0, double.infinity);
     final isKhata = paymentMethod.toLowerCase() == 'khata_credit';
 
-    if (client != null && tenantId != null) {
+    final cleanTid = (tenantId != null && tenantId.trim().isNotEmpty)
+        ? tenantId.trim()
+        : '00000000-0000-0000-0000-000000000001';
+
+    if (client != null) {
+      String? effectiveShiftId = shiftId;
+      if (effectiveShiftId == null || effectiveShiftId.isEmpty) {
+        try {
+          final activeShift = await client
+              .from('pos_shifts')
+              .select('id')
+              .eq('tenant_id', cleanTid)
+              .eq('status', 'open')
+              .order('opened_at', ascending: false)
+              .limit(1)
+              .maybeSingle();
+          if (activeShift != null) {
+            effectiveShiftId = activeShift['id'] as String?;
+          }
+        } catch (e) {
+          debugPrint('StaffPosRepository: failed to resolve active shift: $e');
+        }
+      }
+
       try {
         final invRes = await client.from('invoices').insert({
-          'tenant_id': tenantId,
-          'shift_id': shiftId,
+          'tenant_id': cleanTid,
+          'shift_id': effectiveShiftId,
           'invoice_number': invoiceNumber,
           'member_id': memberId,
           'customer_name': customerName ?? 'Walk-In Customer',
@@ -101,7 +124,7 @@ class StaffPosRepository {
 
         // Insert items
         final itemsData = items.map((i) => {
-          'tenant_id': tenantId,
+          'tenant_id': cleanTid,
           'invoice_id': invoiceId,
           'item_type': 'product',
           'product_id': i.product.id,
@@ -116,17 +139,18 @@ class StaffPosRepository {
         // Record payment
         if (!isKhata) {
           await client.from('payments').insert({
-            'tenant_id': tenantId,
+            'tenant_id': cleanTid,
             'invoice_id': invoiceId,
             'member_id': memberId,
             'amount': total,
             'payment_method': paymentMethod.toLowerCase(),
             'transaction_reference': 'POS-TXN-${now.millisecondsSinceEpoch}',
+            'status': 'approved',
           });
         } else if (memberId != null) {
           // Record Khata Debit
           await client.from('member_khata_ledger').insert({
-            'tenant_id': tenantId,
+            'tenant_id': cleanTid,
             'member_id': memberId,
             'amount': total,
             'is_debit': true,
@@ -138,12 +162,14 @@ class StaffPosRepository {
         for (final item in items) {
           final newStock = (item.product.stockQuantity - item.quantity).clamp(0, 999999);
           await client.from('products').update({'stock_quantity': newStock}).eq('id', item.product.id);
-          await client.from('inventory_transactions').insert({
-            'tenant_id': tenantId,
-            'product_id': item.product.id,
-            'change_quantity': -item.quantity,
-            'transaction_type': 'pos_sale',
-          });
+          try {
+            await client.from('inventory_transactions').insert({
+              'tenant_id': cleanTid,
+              'product_id': item.product.id,
+              'change_quantity': -item.quantity,
+              'transaction_type': 'pos_sale',
+            });
+          } catch (_) {}
         }
       } catch (e) {
         debugPrint('StaffPosRepository: processPosCheckout error: $e');

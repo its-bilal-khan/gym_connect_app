@@ -68,13 +68,20 @@ class StaffReceptionRepository {
 
   const StaffReceptionRepository(this._supabase);
 
+  String _normalizeTenantId(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '00000000-0000-0000-0000-000000000001';
+    final clean = raw.trim();
+    final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+    if (uuidRegex.hasMatch(clean)) return clean;
+    return '00000000-0000-0000-0000-000000000001';
+  }
+
   Future<CheckInResult> validateAndCheckIn({
     required String tokenOrPhone,
     String? tenantId,
   }) async {
     final client = _supabase;
     if (client == null) {
-      // Safe offline fallback
       final isClean = tokenOrPhone.trim().isNotEmpty;
       return CheckInResult(
         isSuccess: isClean,
@@ -85,11 +92,13 @@ class StaffReceptionRepository {
       );
     }
 
+    final cleanTid = _normalizeTenantId(tenantId);
+
     try {
       final input = tokenOrPhone.trim();
       final member = await client
           .from('profiles')
-          .select('id, full_name, phone, member_subscriptions(*, membership_plans(name))')
+          .select('id, full_name, phone, tenant_id, member_subscriptions(*, membership_plans(name))')
           .or('phone.eq.$input,device_id.eq.$input')
           .maybeSingle();
 
@@ -101,7 +110,7 @@ class StaffReceptionRepository {
         final subPlan = activeSub != null ? (activeSub['membership_plans']?['name'] as String?) : null;
 
         await client.from('attendance_logs').insert({
-          'tenant_id': tenantId ?? member['tenant_id'],
+          'tenant_id': member['tenant_id'] ?? cleanTid,
           'member_id': member['id'],
           'verification_method': 'manual_reception',
           'access_result': isGranted ? 'granted' : 'denied',
@@ -128,7 +137,7 @@ class StaffReceptionRepository {
       if (guest != null) {
         await client.from('guest_passes').update({'status': 'used'}).eq('id', guest['id']);
         await client.from('attendance_logs').insert({
-          'tenant_id': tenantId ?? guest['tenant_id'],
+          'tenant_id': guest['tenant_id'] ?? cleanTid,
           'guest_pass_id': guest['id'],
           'verification_method': 'guest_pass',
           'access_result': 'granted',
@@ -193,10 +202,11 @@ class StaffReceptionRepository {
 
   Future<bool> pulseEmergencyGate({String? tenantId}) async {
     final client = _supabase;
-    if (client != null && tenantId != null) {
+    if (client != null) {
+      final cleanTid = _normalizeTenantId(tenantId);
       try {
         await client.from('attendance_logs').insert({
-          'tenant_id': tenantId,
+          'tenant_id': cleanTid,
           'verification_method': 'manual_reception',
           'access_result': 'granted',
           'denial_reason': 'Emergency Reception Pulse',

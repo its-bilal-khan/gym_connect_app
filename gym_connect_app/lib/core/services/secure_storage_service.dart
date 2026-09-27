@@ -158,6 +158,14 @@ class SecureStorageService {
     return _read(AppConstants.fitnessGoalKey);
   }
 
+  Future<void> saveWorkstationOrder(String tenantId, String orderJson) async {
+    await _write('workstations_order_$tenantId', orderJson);
+  }
+
+  Future<String?> getWorkstationOrder(String tenantId) async {
+    return _read('workstations_order_$tenantId');
+  }
+
   Future<void> savePlacedOrderId(String orderId) async {
     try {
       final existing = await _read(AppConstants.lastOrderIdsKey);

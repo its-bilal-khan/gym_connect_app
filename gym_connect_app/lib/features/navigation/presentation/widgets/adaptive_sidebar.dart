@@ -4,10 +4,13 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/widgets/theme_color_switcher_dialog.dart';
 import '../../../auth/domain/models/user_profile.dart';
 import '../../../auth/domain/models/user_role.dart';
+import '../../../shells/owner/presentation/widgets/bento_previews/mini_member_table_preview.dart';
+import '../../../shells/owner/presentation/widgets/bento_previews/mini_workout_protocol_preview.dart';
 import '../../../workout/presentation/desktop/desktop_workout_protocol_manager_view.dart';
 import '../../../members/presentation/screens/desktop_member_hub_screen.dart';
 import '../../domain/nav_destination_item.dart';
 import 'role_switcher_sheet.dart';
+import 'sidebar_mini_preview_overlay.dart';
 import 'sidebar_nav_tile.dart';
 
 class AdaptiveSidebar extends StatelessWidget {
@@ -111,89 +114,107 @@ class AdaptiveSidebar extends StatelessWidget {
               itemCount: items.length,
               separatorBuilder: (_, _) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
-                return SidebarNavTile(
-                  item: items[index],
-                  isSelected: selectedIndex == index,
-                  accentColor: accent,
-                  onTap: () => onItemSelected(index),
+                final item = items[index];
+                return SidebarMiniPreviewOverlay(
+                  previewBuilder: () => resolveMiniPreviewForNavId(
+                    navId: item.id,
+                    role: activeRole,
+                    profile: profile,
+                    tenantId: profile.tenantId ?? '',
+                  ),
+                  label: item.label,
+                  child: SidebarNavTile(
+                    item: item,
+                    isSelected: selectedIndex == index,
+                    accentColor: accent,
+                    onTap: () => onItemSelected(index),
+                  ),
                 );
               },
             ),
           ),
           if (activeRole == UserRole.owner || activeRole == UserRole.superAdmin) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: InkWell(
-                onTap: () => DesktopWorkoutProtocolManagerView.open(context, profile: profile),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: accent.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.fitness_center_rounded, color: accent, size: 18),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          activeRole == UserRole.superAdmin ? 'Master Routines' : 'Workout Studio',
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+            SidebarMiniPreviewOverlay(
+              previewBuilder: () => MiniWorkoutProtocolPreview(tenantId: profile.tenantId ?? ''),
+              label: activeRole == UserRole.superAdmin ? 'Master Routines' : 'Workout Studio',
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: InkWell(
+                  onTap: () => DesktopWorkoutProtocolManagerView.open(context, profile: profile),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: accent.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.fitness_center_rounded, color: accent, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            activeRole == UserRole.superAdmin ? 'Master Routines' : 'Workout Studio',
+                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: accent,
-                          borderRadius: BorderRadius.circular(6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accent,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            activeRole == UserRole.superAdmin ? 'MASTER' : 'POS',
+                            style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black),
+                          ),
                         ),
-                        child: Text(
-                          activeRole == UserRole.superAdmin ? 'MASTER' : 'POS',
-                          style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-              child: InkWell(
-                onTap: () => DesktopMemberHubScreen.open(context, profile: profile),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: accent.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.groups_rounded, color: accent, size: 18),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Members Hub',
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+            SidebarMiniPreviewOverlay(
+              previewBuilder: () => MiniMemberTablePreview(tenantId: profile.tenantId ?? ''),
+              label: 'Members Hub',
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                child: InkWell(
+                  onTap: () => DesktopMemberHubScreen.open(context, profile: profile),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: accent.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.groups_rounded, color: accent, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Members Hub',
+                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: accent,
-                          borderRadius: BorderRadius.circular(6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accent,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'EXCEL',
+                            style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black),
+                          ),
                         ),
-                        child: Text(
-                          'EXCEL',
-                          style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

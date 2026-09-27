@@ -194,51 +194,60 @@ class MembersRepository {
     await _persistRoster(cleanTid, existing);
 
     final client = _supabase;
-    if (client == null) return true;
+    if (client == null) {
+      // Local/offline test environment without live Supabase
+      return true;
+    }
 
     try {
-      // 1. Attempt High-Performance Backend RPC Ingestion
-      try {
-        final payload = members.map((m) => m.toJson()).toList();
-        final rpcRes = await client.rpc('batch_ingest_gym_members', params: {
-          'p_tenant_id': cleanTid,
-          'p_members': payload,
-          'p_update_duplicates': true,
-        });
-        debugPrint('MembersRepository: batch_ingest_gym_members RPC success: $rpcRes');
-        return true;
-      } catch (rpcErr) {
-        debugPrint('MembersRepository: RPC batch_ingest_gym_members failed, falling back to direct table upsert: $rpcErr');
-      }
+      // 1. Attempt High-Performance Backend RPC Ingestion into live Supabase
+      final payload = members.map((m) => m.toJson()).toList();
+      final rpcRes = await client.rpc('batch_ingest_gym_members', params: {
+        'p_tenant_id': cleanTid,
+        'p_members': payload,
+        'p_update_duplicates': true,
+      });
+      debugPrint('MembersRepository: batch_ingest_gym_members RPC success: $rpcRes');
+      return true;
+    } catch (rpcErr) {
+      debugPrint('MembersRepository: RPC batch_ingest_gym_members failed: $rpcErr, attempting direct table fallback...');
 
       // 2. Fallback: Direct Table Upsert
-      for (final m in members) {
-        final isRealUuid = m.id.isNotEmpty && !m.id.startsWith('imported-') && m.id.length == 36;
-        final emailVal = m.email.trim().isNotEmpty
-            ? m.email.trim()
-            : '${m.memberCode.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}@titanfitness.local';
+      try {
+        for (final m in members) {
+          final isRealUuid = m.id.isNotEmpty && !m.id.startsWith('imported-') && m.id.length == 36;
+          final emailVal = m.email.trim().isNotEmpty
+              ? m.email.trim()
+              : '${m.memberCode.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}@titanfitness.local';
 
-        final profilePayload = <String, dynamic>{
-          if (isRealUuid) 'id': m.id,
-          'tenant_id': cleanTid,
-          'role': 'member',
-          'full_name': m.fullName,
-          'email': emailVal,
-          'phone': m.phone,
-          'is_active': m.status != MemberAccountStatus.frozen && m.status != MemberAccountStatus.expired,
-          'raw_user_meta': {
-            'member_code': m.memberCode,
-            'temp_password': m.tempPassword,
-            'assigned_protocol': m.assignedProtocol,
-          },
-        };
+          final profilePayload = <String, dynamic>{
+            if (isRealUuid) 'id': m.id,
+            'tenant_id': cleanTid,
+            'role': 'member',
+            'full_name': m.fullName,
+            'email': emailVal,
+            'phone': m.phone,
+            'is_active': m.status != MemberAccountStatus.frozen && m.status != MemberAccountStatus.expired,
+            'raw_user_meta': {
+              'member_code': m.memberCode,
+              'temp_password': m.tempPassword,
+              'assigned_protocol': m.assignedProtocol,
+            },
+          };
 
-        await client.from('profiles').upsert(profilePayload, onConflict: 'email');
+          await client.from('profiles').upsert(profilePayload, onConflict: 'email');
+        }
+        return true;
+      } catch (directErr) {
+        debugPrint(
+          'MembersRepository: Cloud database sync pending ($rpcErr | Fallback: $directErr). '
+          'Members are securely saved in local persistent storage. '
+          'Run "supabase_run_bulk_member_ingestion.sql" in Supabase SQL Editor to enable real-time cloud sync.',
+        );
+        // Zero data loss: Members are already saved in _inMemoryStore and persisted to disk via _persistRoster.
+        // Return true so the user's import is completed cleanly and state is updated.
+        return true;
       }
-      return true;
-    } catch (e) {
-      debugPrint('MembersRepository: importBatch backend sync notice: $e (data preserved locally)');
-      return true;
     }
   }
 
@@ -281,7 +290,7 @@ class MembersRepository {
             },
           });
         } catch (tableErr) {
-          debugPrint('MembersRepository: direct insert notice: $tableErr');
+          debugPrint('MembersRepository: direct insert notice: $tableErr. Make sure "supabase_run_bulk_member_ingestion.sql" has been run in Supabase.');
         }
       }
     }

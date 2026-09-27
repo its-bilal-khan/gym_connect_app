@@ -13,6 +13,7 @@ import '../widgets/member_credentials_dialog.dart';
 import '../widgets/member_data_table.dart';
 import '../widgets/member_empty_state_card.dart';
 import '../widgets/member_grid_card.dart';
+import '../widgets/member_list_card.dart';
 
 class DesktopMemberHubScreen extends ConsumerStatefulWidget {
   final UserProfile profile;
@@ -201,8 +202,52 @@ class _DesktopMemberHubScreenState extends ConsumerState<DesktopMemberHubScreen>
                     context,
                     tenantId: widget.profile.tenantId ?? '',
                     existingMembers: allMembers,
-                    onConfirmImport: (validMembers) {
-                      ref.read(membersNotifierProvider.notifier).importBatch(validMembers);
+                    onConfirmImport: (validMembers) async {
+                      final success = await ref.read(membersNotifierProvider.notifier).importBatch(validMembers, tenantId: widget.profile.tenantId ?? '');
+                      if (!context.mounted) return;
+                      final mState = ref.read(membersNotifierProvider);
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(Icons.check_circle_rounded, color: Colors.black, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    mState.successMessage ?? 'Successfully synchronized ${validMembers.length} members with roster!',
+                                    style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: accent,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    mState.errorMessage ?? 'Import notice: Could not complete spreadsheet ingestion.',
+                                    style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: Colors.redAccent,
+                            duration: const Duration(seconds: 6),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        );
+                      }
                     },
                   );
                 },
@@ -215,51 +260,74 @@ class _DesktopMemberHubScreenState extends ConsumerState<DesktopMemberHubScreen>
   }
 
   Widget _buildStatsRow(MemberHubStats stats, Color accent) {
-    return Row(
-      children: [
-        _buildStatCard('TOTAL MEMBERS', '${stats.totalCount}', Icons.groups_rounded, Colors.white, 'Registered roster'),
-        const SizedBox(width: 12),
-        _buildStatCard('ACTIVE PASSES', '${stats.activeCount}', Icons.verified_user_rounded, Colors.greenAccent, 'Valid & Unlocked'),
-        const SizedBox(width: 12),
-        _buildStatCard('EXPIRING SOON', '${stats.expiringSoonCount}', Icons.warning_amber_rounded, Colors.orangeAccent, 'Within 7 days'),
-        const SizedBox(width: 12),
-        _buildStatCard('OVERDUE DUES', 'PKR ${stats.totalOverdueDues.toStringAsFixed(0)}', Icons.money_off_rounded, Colors.redAccent, '${stats.overdueCount} pending dues'),
-        const SizedBox(width: 12),
-        _buildStatCard('FROZEN (ON LEAVE)', '${stats.frozenCount}', Icons.pause_circle_outline_rounded, Colors.cyanAccent, 'Days preserved'),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cards = [
+          _buildStatCard('TOTAL MEMBERS', '${stats.totalCount}', Icons.groups_rounded, Colors.white, 'Registered roster'),
+          _buildStatCard('ACTIVE PASSES', '${stats.activeCount}', Icons.verified_user_rounded, Colors.greenAccent, 'Valid & Unlocked'),
+          _buildStatCard('EXPIRING SOON', '${stats.expiringSoonCount}', Icons.warning_amber_rounded, Colors.orangeAccent, 'Within 7 days'),
+          _buildStatCard('OVERDUE DUES', 'PKR ${stats.totalOverdueDues.toStringAsFixed(0)}', Icons.money_off_rounded, Colors.redAccent, '${stats.overdueCount} pending dues'),
+          _buildStatCard('FROZEN (ON LEAVE)', '${stats.frozenCount}', Icons.pause_circle_outline_rounded, Colors.cyanAccent, 'Days preserved'),
+        ];
+
+        // Responsive wrap when screen width is constrained
+        if (constraints.maxWidth < 1050) {
+          final itemWidth = constraints.maxWidth < 600
+              ? constraints.maxWidth
+              : constraints.maxWidth < 850
+                  ? (constraints.maxWidth - 12) / 2
+                  : (constraints.maxWidth - 24) / 3;
+
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: cards.map((c) => SizedBox(width: itemWidth, child: c)).toList(),
+          );
+        }
+
+        return Row(
+          children: cards.asMap().entries.map((entry) {
+            final isLast = entry.key == cards.length - 1;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: isLast ? 0 : 12),
+                child: entry.value,
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color, String subtitle) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.15)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, color: color, size: 20),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.8)),
+                const SizedBox(height: 2),
+                Text(value, style: GoogleFonts.oswald(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                Text(subtitle, style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.8)),
-                  const SizedBox(height: 2),
-                  Text(value, style: GoogleFonts.oswald(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                  Text(subtitle, style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -373,11 +441,11 @@ class _DesktopMemberHubScreenState extends ConsumerState<DesktopMemberHubScreen>
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Deep Fitness Insights Switch (Requirement from User)
-              InkWell(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 820;
+
+              final insightsWidget = InkWell(
                 onTap: notifier.toggleDeepInsights,
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
@@ -390,6 +458,7 @@ class _DesktopMemberHubScreenState extends ConsumerState<DesktopMemberHubScreen>
                     ),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.insights_rounded,
@@ -414,20 +483,50 @@ class _DesktopMemberHubScreenState extends ConsumerState<DesktopMemberHubScreen>
                     ],
                   ),
                 ),
-              ),
+              );
 
-              // View Mode Segmented Controls (Rule 5: Dual-View Standard)
-              Container(
+              final viewModesWidget = Container(
                 padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
+                ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildViewButton(Icons.table_chart_rounded, 'Data Grid (Table)', MemberViewMode.table, filter.viewMode, notifier, accent),
+                    _buildViewButton(Icons.view_list_rounded, 'Density List', MemberViewMode.list, filter.viewMode, notifier, accent),
                     _buildViewButton(Icons.grid_view_rounded, 'Cards', MemberViewMode.grid, filter.viewMode, notifier, accent),
                   ],
                 ),
-              ),
-            ],
+              );
+
+              if (isWide) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    insightsWidget,
+                    viewModesWidget,
+                  ],
+                );
+              }
+
+              return SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  runAlignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 10,
+                  children: [
+                    insightsWidget,
+                    viewModesWidget,
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -479,8 +578,37 @@ class _DesktopMemberHubScreenState extends ConsumerState<DesktopMemberHubScreen>
             context,
             tenantId: tenantId,
             existingMembers: allMembers,
-            onConfirmImport: (validMembers) {
-              ref.read(membersNotifierProvider.notifier).importBatch(validMembers);
+            onConfirmImport: (validMembers) async {
+              final success = await ref.read(membersNotifierProvider.notifier).importBatch(validMembers, tenantId: tenantId);
+              if (!context.mounted) return;
+              final mState = ref.read(membersNotifierProvider);
+              final accent = Theme.of(context).colorScheme.primary;
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      mState.successMessage ?? 'Successfully synchronized ${validMembers.length} members with database!',
+                      style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold),
+                    ),
+                    backgroundColor: accent,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      mState.errorMessage ?? 'Database sync failed. Please ensure "supabase_run_bulk_member_ingestion.sql" has been run in Supabase SQL Editor.',
+                      style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    backgroundColor: Colors.redAccent,
+                    duration: const Duration(seconds: 8),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              }
             },
           );
         },
@@ -547,7 +675,7 @@ class _DesktopMemberHubScreenState extends ConsumerState<DesktopMemberHubScreen>
       );
     }
 
-    // 3. Render Table or ID Cards Grid
+    // 3. Render Table, Density List, or ID Cards Grid
     if (filter.viewMode == MemberViewMode.table) {
       return MemberDataTable(
         members: members,
@@ -570,6 +698,37 @@ class _DesktopMemberHubScreenState extends ConsumerState<DesktopMemberHubScreen>
           onConfirm: (reason) => notifier.toggleFreezeMembership(m.id, reason: reason),
         ),
         onSendReminder: (m) => notifier.sendRenewalReminder(m),
+      );
+    } else if (filter.viewMode == MemberViewMode.list) {
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: members.length,
+        itemBuilder: (context, index) {
+          final m = members[index];
+          return MemberListCard(
+            member: m,
+            showDeepInsights: filter.deepInsightsEnabled,
+            onEdit: () => AddEditMemberDialog.show(
+              context,
+              tenantId: tenantId,
+              initialMember: m,
+              onSave: (updated) => notifier.updateMember(updated),
+            ),
+            onDelete: () => _confirmDelete(m),
+            onManageCredentials: () => MemberCredentialsDialog.show(
+              context,
+              member: m,
+              onSavePassword: (pass) => notifier.resetPassword(m.id, pass),
+            ),
+            onToggleFreeze: () => FreezeMembershipDialog.show(
+              context,
+              member: m,
+              onConfirm: (reason) => notifier.toggleFreezeMembership(m.id, reason: reason),
+            ),
+            onSendReminder: () => notifier.sendRenewalReminder(m),
+          );
+        },
       );
     } else {
       return LayoutBuilder(

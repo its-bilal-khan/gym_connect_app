@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
@@ -131,11 +132,13 @@ class MembersNotifier extends Notifier<MembersState> {
       state = state.copyWith(
         isLoading: false,
         allMembers: refreshed,
-        successMessage: 'Successfully ingested & synchronized ${members.length} members!',
+        errorMessage: null,
+        successMessage: 'Successfully ingested ${members.length} members into roster!',
       );
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: 'Import failed: $e');
+      debugPrint('MembersNotifier: importBatch error: $e');
+      state = state.copyWith(isLoading: false, errorMessage: 'Failed to complete import: $e');
       return false;
     }
   }

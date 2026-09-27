@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../auth/domain/models/user_profile.dart';
+import '../../../../dashboard/data/owner_dashboard_repository.dart';
 import '../../../../dashboard/presentation/widgets/metric_card.dart';
 import '../../../../payments/presentation/providers/payments_providers.dart';
 import '../../../../payments/presentation/screens/gym_owner_payment_approvals_screen.dart';
@@ -86,11 +87,7 @@ class OwnerOverviewTab extends ConsumerWidget {
               onTap: () => DesktopWorkoutProtocolManagerView.open(context, profile: profile),
             ),
             const SizedBox(height: 14),
-            const MetricCard(title: 'Monthly Revenue', value: 'PKR 185,000', icon: Icons.attach_money_rounded, subtitle: '+14.2% vs previous month'),
-            const SizedBox(height: 12),
-            const MetricCard(title: 'Active Members', value: '1,482', icon: Icons.people_alt_rounded, subtitle: '96.2% retention rate'),
-            const SizedBox(height: 12),
-            const MetricCard(title: 'Gate Check-Ins Today', value: '348', icon: Icons.door_sliding_rounded, subtitle: 'Peak: 6:00 PM - 8:30 PM'),
+            _buildLiveMetricsSection(ref, tenantId),
             SizedBox(height: 110 + bottomInset),
           ],
         ),
@@ -136,6 +133,66 @@ class OwnerOverviewTab extends ConsumerWidget {
             const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.white70),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLiveMetricsSection(WidgetRef ref, String tenantId) {
+    final metricsAsync = ref.watch(ownerDashboardMetricsProvider(tenantId));
+
+    return metricsAsync.when(
+      loading: () => Column(
+        children: const [
+          MetricCard(title: 'Monthly Revenue', value: '...', icon: Icons.attach_money_rounded, subtitle: 'Connecting live Supabase...'),
+          SizedBox(height: 12),
+          MetricCard(title: 'Active Members', value: '...', icon: Icons.people_alt_rounded, subtitle: 'Counting members...'),
+          SizedBox(height: 12),
+          MetricCard(title: 'Gate Check-Ins Today', value: '...', icon: Icons.door_sliding_rounded, subtitle: 'Fetching gate logs...'),
+          SizedBox(height: 12),
+          MetricCard(title: 'Shift Cash Drawer', value: '...', icon: Icons.point_of_sale_rounded, subtitle: 'Querying shift...'),
+        ],
+      ),
+      error: (e, _) => Column(
+        children: const [
+          MetricCard(title: 'Monthly Revenue', value: 'PKR 0', icon: Icons.attach_money_rounded, subtitle: '0 transactions recorded'),
+          SizedBox(height: 12),
+          MetricCard(title: 'Active Members', value: '0', icon: Icons.people_alt_rounded, subtitle: '0 registered members'),
+          SizedBox(height: 12),
+          MetricCard(title: 'Gate Check-Ins Today', value: '0', icon: Icons.door_sliding_rounded, subtitle: 'No check-ins today'),
+          SizedBox(height: 12),
+          MetricCard(title: 'Shift Cash Drawer', value: 'PKR 0', icon: Icons.point_of_sale_rounded, subtitle: 'POS drawer closed'),
+        ],
+      ),
+      data: (metrics) => Column(
+        children: [
+          MetricCard(
+            title: 'Monthly Revenue',
+            value: metrics.formattedMonthlyRevenue,
+            icon: Icons.attach_money_rounded,
+            subtitle: metrics.revenueGrowthSubtitle,
+          ),
+          const SizedBox(height: 12),
+          MetricCard(
+            title: 'Active Members',
+            value: metrics.formattedActiveMembers,
+            icon: Icons.people_alt_rounded,
+            subtitle: metrics.retentionSubtitle,
+          ),
+          const SizedBox(height: 12),
+          MetricCard(
+            title: 'Gate Check-Ins Today',
+            value: metrics.formattedCheckInsToday,
+            icon: Icons.door_sliding_rounded,
+            subtitle: metrics.checkInsSubtitle,
+          ),
+          const SizedBox(height: 12),
+          MetricCard(
+            title: 'Shift Cash Drawer',
+            value: metrics.formattedShiftCashDrawer,
+            icon: Icons.point_of_sale_rounded,
+            subtitle: metrics.shiftCashSubtitle,
+          ),
+        ],
       ),
     );
   }

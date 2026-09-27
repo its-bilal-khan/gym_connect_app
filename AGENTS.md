@@ -53,4 +53,14 @@
 - **Universal Real-Time Reflection:**
   - When a gym owner/tenant selects a theme color (Neon Volt, Electric Blue, Soft Yellow, or Lavender), all modules across the application (Dashboard metrics, POS workstations, Workout Protocol Studio, Store catalog, Dialogs, Check-in, Khata) **MUST** immediately reflect the selected color in real-time.
 
+## 7. Universal Mini View Standard (STRICT)
+- **Mandatory Mini View for Every Module:**
+  - Whenever ANY new module, screen, or workstation is built in the application, it **MUST** have a corresponding Mini View representation ready for use in navigation hover tooltips, bento workstation previews, and modal sheets.
+  - You must never ask the user whether a mini view is needed—build it as an integral part of the module.
+- **Exact UI & Fidelity Standard:**
+  - Mini views **MUST** look exactly like the original full module UI (using `ScaledLivePreview` or live scaled layout rendering), not an arbitrary or unrelated placeholder.
+- **Automatic Real-Time State & Design Reflection:**
+  - Mini views must embed or directly replicate the live module's widget tree and Riverpod providers. Any design updates, theme accent switches, or live database updates (Supabase streams/providers) occurring in the module **MUST** automatically reflect inside its mini view in real-time with zero manual syncing.
+
+
 
