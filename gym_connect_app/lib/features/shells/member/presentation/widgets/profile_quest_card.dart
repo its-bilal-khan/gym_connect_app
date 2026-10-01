@@ -62,12 +62,15 @@ class ProfileQuestCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        'PROFILE QUEST',
-                        style: GoogleFonts.oswald(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                      Flexible(
+                        child: Text(
+                          'PROFILE QUEST',
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.oswald(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                     ],

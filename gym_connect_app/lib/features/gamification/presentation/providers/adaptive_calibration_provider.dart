@@ -43,17 +43,20 @@ final adaptiveCalibrationProvider =
         AdaptiveCalibrationNotifier.new);
 
 class AdaptiveCalibrationNotifier extends Notifier<AdaptiveCalibrationState> {
-  late final GamificationRepository _repository;
+  GamificationRepository get _repository => ref.read(gamificationRepositoryProvider);
 
   @override
   AdaptiveCalibrationState build() {
-    _repository = ref.watch(gamificationRepositoryProvider);
     Future.microtask(() => checkCalibrationStatus());
     return const AdaptiveCalibrationState();
   }
 
   Future<void> checkCalibrationStatus() async {
-    final client = Supabase.instance.client;
+    SupabaseClient? client;
+    try {
+      client = Supabase.instance.client;
+    } catch (_) {}
+    if (client == null) return;
     final userId = client.auth.currentUser?.id;
     if (userId == null) return;
 
@@ -82,7 +85,11 @@ class AdaptiveCalibrationNotifier extends Notifier<AdaptiveCalibrationState> {
   }
 
   Future<void> acceptCalibrationTarget(int target) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
+    SupabaseClient? client;
+    try {
+      client = Supabase.instance.client;
+    } catch (_) {}
+    final userId = client?.auth.currentUser?.id;
     if (userId == null) return;
 
     state = state.copyWith(isCalibrating: true);

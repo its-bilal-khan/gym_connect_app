@@ -102,6 +102,18 @@ class SecureStorageService {
     await _write('gym_user_accent_color', hex);
   }
 
+  Future<String?> getOrCreateDeviceId() async {
+    final existing = await _read('gym_device_hardware_uuid');
+    if (existing != null && existing.isNotEmpty) return existing;
+    final newId = 'hw_${DateTime.now().millisecondsSinceEpoch}_${(1000 + (DateTime.now().microsecond % 9000))}';
+    await _write('gym_device_hardware_uuid', newId);
+    return newId;
+  }
+
+  Future<String?> getDeviceId() async {
+    return _read('gym_device_hardware_uuid');
+  }
+
   Future<String?> getUserAccentColor() async {
     return _read('gym_user_accent_color');
   }

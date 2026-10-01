@@ -1,3 +1,15 @@
 export 'daily_gamification_provider.dart';
 export 'leaderboard_podium_provider.dart';
+export 'dual_track_leaderboard_state.dart';
+export 'dual_track_leaderboard_provider.dart';
 export 'adaptive_calibration_provider.dart';
+export 'device_lock_provider.dart';
+export 'sleep_tracker_provider.dart';
+export 'diet_proof_provider.dart';
+export 'composite_compliance_provider.dart';
+export 'ai_rep_counter_provider.dart';
+export 'explore_reels_state.dart';
+export 'explore_reels_provider.dart';
+export 'moderation_queue_provider.dart';
+export 'owner_reward_config_provider.dart';
+export 'vision_ai_config_provider.dart';

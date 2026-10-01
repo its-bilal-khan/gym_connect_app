@@ -58,8 +58,10 @@ class DailyGamificationNotifier extends Notifier<DailyGamificationState> {
   }
 
   Future<void> loadTodayState() async {
-    final client = Supabase.instance.client;
-    final userId = client.auth.currentUser?.id;
+    String? userId;
+    try {
+      userId = Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {}
     if (userId == null) {
       state = state.copyWith(isLoading: false);
       return;
@@ -96,7 +98,10 @@ class DailyGamificationNotifier extends Notifier<DailyGamificationState> {
     String sleepSource = 'none',
     int sleepAsleepMinutes = 0,
   }) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
+    String? userId;
+    try {
+      userId = Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {}
     if (userId == null) return null;
 
     state = state.copyWith(isLoading: true, error: null);

@@ -11,6 +11,7 @@ import 'package:gym_connect_app/features/auth/presentation/signup_screen.dart';
 import 'package:gym_connect_app/features/auth/presentation/widgets/member_onboarding_gate_view.dart';
 import 'package:gym_connect_app/features/workout/domain/models/fitness_profile_model.dart';
 import 'package:gym_connect_app/features/workout/presentation/providers/fitness_profile_provider.dart';
+import 'package:gym_connect_app/features/shells/member/presentation/widgets/member_today_tab.dart';
 
 class FakeAuthNotifier extends AuthNotifier {
   final AppAuthState initialState;
@@ -139,6 +140,10 @@ void main() {
     });
 
     testWidgets('AuthGate routes completed member profile directly to Member Shell & Today Tab', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       const completedFitnessProfile = UserFitnessProfile(
         userId: 'mem-999-uuid',
         profileCompleted: true, // Existing onboarded member
@@ -168,9 +173,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verified: Bypasses onboarding gate and lands directly in member shell
+      // Verified: Bypasses onboarding gate and lands directly in member shell & today tab
       expect(find.byType(MemberOnboardingGateView), findsNothing);
       expect(find.text('RAPID 30-SECOND SETUP'), findsNothing);
+      expect(find.byType(MemberTodayTab), findsOneWidget);
     });
   });
 }

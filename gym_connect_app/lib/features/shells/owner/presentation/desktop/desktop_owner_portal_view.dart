@@ -7,6 +7,7 @@ import 'package:gym_connect_app/features/dashboard/data/owner_dashboard_reposito
 import 'package:gym_connect_app/features/payments/presentation/providers/payments_providers.dart';
 import 'package:gym_connect_app/features/store/data/store_repository.dart';
 import 'package:gym_connect_app/features/store/presentation/providers/store_providers.dart';
+import '../widgets/owner_gamification_workstation_card.dart';
 import '../widgets/owner_portal_metrics_row.dart';
 import '../widgets/owner_workstations_grid.dart';
 import '../widgets/workstations_header_toolbar.dart';
@@ -51,6 +52,8 @@ class DesktopOwnerPortalView extends ConsumerWidget {
             activeMembers: activeMembersCount,
             productsCount: productsCount,
           ),
+          const SizedBox(height: 24),
+          OwnerGamificationWorkstationCard(tenantId: tenantId, reviewerId: profile.id),
           const SizedBox(height: 24),
           _buildWatchdogCard(),
         ],

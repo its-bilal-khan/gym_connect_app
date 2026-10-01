@@ -3,21 +3,27 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/models/models.dart';
 
 final leaderboardRepositoryProvider = Provider<LeaderboardRepository>((ref) {
-  return LeaderboardRepository(Supabase.instance.client);
+  SupabaseClient? client;
+  try {
+    client = Supabase.instance.client;
+  } catch (_) {}
+  return LeaderboardRepository(client);
 });
 
 /// Dedicated repository for monthly races, Hall of Fame streaks, and archive ledgers.
 class LeaderboardRepository {
-  final SupabaseClient _client;
+  final SupabaseClient? _client;
 
-  LeaderboardRepository(this._client);
+  LeaderboardRepository([this._client]);
 
   /// Fetches current month race rankings (resets 1st of month) with zero mock data.
   Future<List<LeaderboardMember>> fetchActiveMonthlyLeaderboard({
     String? tenantId,
     int limit = 50,
   }) async {
-    var query = _client
+    final client = _client;
+    if (client == null) return const [];
+    var query = client
         .from('member_gamification')
         .select('user_id, monthly_points, total_points, current_streak_days, longest_streak_days, monthly_workouts_completed, streak_multiplier, is_elite_qualified, last_month_rank, profiles(id, full_name, avatar_url)');
 
@@ -26,7 +32,7 @@ class LeaderboardRepository {
     }
 
     final res = await query.order('monthly_points', ascending: false).limit(limit);
-    final currentUserId = _client.auth.currentUser?.id;
+    final currentUserId = client.auth.currentUser?.id;
 
     final list = res as List<dynamic>;
     return List.generate(list.length, (i) {
@@ -40,7 +46,9 @@ class LeaderboardRepository {
     String? tenantId,
     int limit = 50,
   }) async {
-    var query = _client
+    final client = _client;
+    if (client == null) return const [];
+    var query = client
         .from('member_gamification')
         .select('user_id, monthly_points, total_points, current_streak_days, longest_streak_days, monthly_workouts_completed, streak_multiplier, is_elite_qualified, profiles(id, full_name, avatar_url)');
 
@@ -49,7 +57,7 @@ class LeaderboardRepository {
     }
 
     final res = await query.order('longest_streak_days', ascending: false).order('current_streak_days', ascending: false).limit(limit);
-    final currentUserId = _client.auth.currentUser?.id;
+    final currentUserId = client.auth.currentUser?.id;
 
     final list = res as List<dynamic>;
     return List.generate(list.length, (i) {
@@ -63,7 +71,9 @@ class LeaderboardRepository {
     String? tenantId,
     String? monthYear,
   }) async {
-    var query = _client
+    final client = _client;
+    if (client == null) return const [];
+    var query = client
         .from('monthly_leaderboard_archives')
         .select('*, profiles(full_name)');
 
@@ -81,7 +91,9 @@ class LeaderboardRepository {
 
   /// Fetches custom podium rewards configured by gym owner.
   Future<TenantRewardConfig> fetchTenantRewardConfig(String tenantId) async {
-    final res = await _client
+    final client = _client;
+    if (client == null) return const TenantRewardConfig();
+    final res = await client
         .from('tenants')
         .select('leaderboard_rewards, min_monthly_workouts_qualification, veteran_multiplier_config')
         .eq('id', tenantId)
@@ -89,5 +101,22 @@ class LeaderboardRepository {
 
     if (res == null) return const TenantRewardConfig();
     return TenantRewardConfig.fromJson(res);
+  }
+
+  /// Fetches live member qualification and multiplier telemetry.
+  Future<Map<String, dynamic>?> fetchMemberLeaderboardStatus({
+    required String userId,
+    required String tenantId,
+  }) async {
+    final client = _client;
+    if (client == null) return null;
+    try {
+      final res = await client.rpc('rpc_get_member_leaderboard_status', params: {
+        'p_user_id': userId,
+        'p_tenant_id': tenantId,
+      });
+      if (res is Map<String, dynamic>) return res;
+    } catch (_) {}
+    return null;
   }
 }

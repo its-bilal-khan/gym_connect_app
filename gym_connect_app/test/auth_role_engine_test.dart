@@ -65,12 +65,12 @@ void main() {
   group('RoleNavigationConfig Tests', () {
     test('RoleNavigationConfig returns correct tab destinations per role', () {
       final ownerTabs = RoleNavigationConfig.getTabsForRole(UserRole.owner);
-      expect(ownerTabs.length, 4);
-      expect(ownerTabs.map((t) => t.id), containsAll(['overview', 'pos_staff', 'live_ops', 'settings']));
+      expect(ownerTabs.length, 5);
+      expect(ownerTabs.map((t) => t.id), containsAll(['overview', 'pos_staff', 'live_ops', 'tools', 'settings']));
 
       final staffTabs = RoleNavigationConfig.getTabsForRole(UserRole.staff);
-      expect(staffTabs.length, 4);
-      expect(staffTabs.map((t) => t.id), containsAll(['reception', 'members', 'pos', 'shift']));
+      expect(staffTabs.length, 5);
+      expect(staffTabs.map((t) => t.id), containsAll(['reception', 'members', 'pos', 'shift', 'tools']));
 
       final memberTabs = RoleNavigationConfig.getTabsForRole(UserRole.member);
       expect(memberTabs.length, 5);

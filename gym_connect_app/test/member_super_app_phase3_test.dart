@@ -241,10 +241,12 @@ void main() {
   group('Phase 3 Member Super App - GatePassCard & MemberWorkoutHubTab', () {
     testWidgets('GatePassCard renders dynamic pass and security controls', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: GatePassCard(),
+        const ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: GatePassCard(),
+              ),
             ),
           ),
         ),

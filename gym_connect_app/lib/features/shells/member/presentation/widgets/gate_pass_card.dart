@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../../../../../core/theme/app_colors.dart';
+import 'gate_pass_header.dart';
 import 'gate_pass_qr_preview.dart';
 
 class GatePassCard extends ConsumerStatefulWidget {
@@ -42,7 +43,6 @@ class _GatePassCardState extends ConsumerState<GatePassCard> {
   void _listenShake() {
     _accelSub?.cancel();
     if (!_shakeEnabled) return;
-
     try {
       _accelSub = userAccelerometerEventStream().listen((event) {
         if (!_shakeEnabled || _isUnlocking) return;
@@ -54,18 +54,11 @@ class _GatePassCardState extends ConsumerState<GatePassCard> {
             _simulateGateUnlock(isShakeTrigger: true);
           }
         }
-      }, onError: (err) {
-        debugPrint('Shake detection error: $err');
-      });
-    } catch (e) {
-      debugPrint('Shake sensor unavailable: $e');
-    }
+      }, onError: (_) {});
+    } catch (_) {}
   }
 
-  String _generateToken() {
-    final rand = Random();
-    return 'GC-${1000 + rand.nextInt(9000)}';
-  }
+  String _generateToken() => 'GC-${1000 + Random().nextInt(9000)}';
 
   void _startTimer() {
     _timer?.cancel();
@@ -85,56 +78,13 @@ class _GatePassCardState extends ConsumerState<GatePassCard> {
   Future<void> _simulateGateUnlock({bool isShakeTrigger = false}) async {
     HapticFeedback.heavyImpact();
     setState(() => _isUnlocking = true);
-
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
-
     setState(() {
       _isUnlocking = false;
       _lastShakeTime = DateTime.now();
     });
     HapticFeedback.mediumImpact();
-
-
-
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppColors.surface,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: AppColors.primaryAccent, width: 1.5),
-        ),
-        duration: const Duration(seconds: 4),
-        content: Row(
-          children: [
-            Icon(Icons.bolt_rounded, color: AppColors.primaryAccent, size: 24),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isShakeTrigger
-                        ? '⚡ TURNSTILE UNLOCKED (SHAKE VERIFIED)'
-                        : 'ESP32 Gate Signal Sent: Magnetic Lock Released (5s)',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Magnetic lock released (5s) • Alert added to notification bell on top!',
-                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -143,7 +93,7 @@ class _GatePassCardState extends ConsumerState<GatePassCard> {
     final accent = theme.colorScheme.primary;
 
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
@@ -153,11 +103,14 @@ class _GatePassCardState extends ConsumerState<GatePassCard> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildHeader(accent),
+          GatePassHeader(secondsRemaining: _secondsRemaining, accent: accent),
           const SizedBox(height: 18),
           GatePassQrPreview(currentToken: _currentToken, isUnlocking: _isUnlocking, accent: accent),
           const SizedBox(height: 10),
-          Text('Refreshes dynamically every 10s • Single Device Protected', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
+          Text(
+            'Refreshes dynamically every 10s • Single Device Protected',
+            style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -189,37 +142,6 @@ class _GatePassCardState extends ConsumerState<GatePassCard> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildHeader(Color accent) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.greenAccent)),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.verified_user_rounded, color: Colors.greenAccent, size: 14),
-              const SizedBox(width: 4),
-              Text('DEVICE ID LOCKED', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
-            ],
-          ),
-        ),
-        Row(
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(value: _secondsRemaining / 10.0, strokeWidth: 2.5, color: accent, backgroundColor: Colors.white10),
-            ),
-            const SizedBox(width: 8),
-            Text('${_secondsRemaining}s', style: GoogleFonts.oswald(fontSize: 13, fontWeight: FontWeight.bold, color: accent)),
-          ],
-        ),
-      ],
     );
   }
 }

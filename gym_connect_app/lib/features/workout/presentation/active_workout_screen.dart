@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
-import 'providers/ai_workout_provider.dart';
 import 'providers/workout_notifier.dart';
 import 'widgets/active_workout_app_bar.dart';
-import 'widgets/exercise_pip_player.dart';
-import 'widgets/exercise_swap_sheet.dart';
+import 'widgets/exercise_swap_trigger_button.dart';
+import 'widgets/workout_media_viewport.dart';
 import 'widgets/exercise_tab_bar.dart';
 import 'widgets/rest_timer_overlay.dart';
 import 'widgets/set_tracker_tile.dart';
 import 'widgets/workout_finish_dialog.dart';
+import '../../gamification/presentation/widgets/ai_rep_counter_sheet.dart';
 
 class ActiveWorkoutScreen extends ConsumerWidget {
   const ActiveWorkoutScreen({super.key});
@@ -52,7 +52,16 @@ class ActiveWorkoutScreen extends ConsumerWidget {
                     accentColor: accent,
                   ),
                   const SizedBox(height: 14),
-                  ExercisePipPlayer(exercise: currentExercise.exercise),
+                  WorkoutMediaViewport(
+                    exercise: currentExercise.exercise,
+                    targetReps: int.tryParse(currentExercise.targetRepsRange.split('-').last.trim()) ?? 12,
+                    onRepCountChanged: (reps) {
+                      final activeSetIdx = sets.indexWhere((s) => !s.isCompleted);
+                      if (activeSetIdx != -1) {
+                        ref.read(workoutNotifierProvider.notifier).updateSetReps(currentExercise.id, activeSetIdx, reps);
+                      }
+                    },
+                  ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -65,19 +74,7 @@ class ActiveWorkoutScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       InkWell(
-                        onTap: () async {
-                          await ref.read(aiWorkoutProvider.notifier).loadSwapCandidates(
-                                targetMuscle: currentExercise.exercise.targetMuscle,
-                              );
-                          if (context.mounted) {
-                            ExerciseSwapSheet.show(
-                              context,
-                              dayExerciseId: currentExercise.id,
-                              currentExerciseName: currentExercise.exercise.name,
-                              targetMuscle: currentExercise.exercise.targetMuscle,
-                            );
-                          }
-                        },
+                        onTap: () => AiRepCounterSheet.show(context),
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -89,12 +86,18 @@ class ActiveWorkoutScreen extends ConsumerWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.swap_horiz_rounded, size: 14, color: accent),
+                              Icon(Icons.videocam_rounded, size: 14, color: accent),
                               const SizedBox(width: 4),
-                              Text('SWAP', style: GoogleFonts.oswald(fontSize: 11, fontWeight: FontWeight.bold, color: accent)),
+                              Text('AI COUNTER', style: GoogleFonts.oswald(fontSize: 11, fontWeight: FontWeight.bold, color: accent)),
                             ],
                           ),
                         ),
+                      ),
+                      const SizedBox(width: 6),
+                      ExerciseSwapTriggerButton(
+                        dayExerciseId: currentExercise.id,
+                        exerciseName: currentExercise.exercise.name,
+                        targetMuscle: currentExercise.exercise.targetMuscle,
                       ),
                     ],
                   ),

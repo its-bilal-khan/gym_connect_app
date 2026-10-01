@@ -1,3 +1,43 @@
+enum OptimalCameraPlacement {
+  machineHolder,
+  floorLevel,
+  freeStanding;
+
+  static OptimalCameraPlacement fromString(String? val) {
+    switch (val?.toLowerCase().trim()) {
+      case 'machine_holder':
+        return OptimalCameraPlacement.machineHolder;
+      case 'floor_level':
+        return OptimalCameraPlacement.floorLevel;
+      case 'free_standing':
+      default:
+        return OptimalCameraPlacement.freeStanding;
+    }
+  }
+
+  String get dbValue {
+    switch (this) {
+      case OptimalCameraPlacement.machineHolder:
+        return 'machine_holder';
+      case OptimalCameraPlacement.floorLevel:
+        return 'floor_level';
+      case OptimalCameraPlacement.freeStanding:
+        return 'free_standing';
+    }
+  }
+
+  String get instructionMessage {
+    switch (this) {
+      case OptimalCameraPlacement.machineHolder:
+        return '📱 Insert device into the Machine Holder for accurate AI tracking.';
+      case OptimalCameraPlacement.floorLevel:
+        return '📐 Place phone on the floor angled upward at 45° for full body capture.';
+      case OptimalCameraPlacement.freeStanding:
+        return '🧍 Prop phone upright at hip height 6-8 ft away.';
+    }
+  }
+}
+
 class Exercise {
   final String id;
   final String name;
@@ -9,6 +49,7 @@ class Exercise {
   final String? thumbnailUrl;
   final String tips;
   final List<String> instructions;
+  final OptimalCameraPlacement optimalCameraPlacement;
 
   const Exercise({
     required this.id,
@@ -21,6 +62,7 @@ class Exercise {
     this.thumbnailUrl,
     this.tips = 'Maintain core tension and controlled eccentric tempo.',
     this.instructions = const [],
+    this.optimalCameraPlacement = OptimalCameraPlacement.freeStanding,
   });
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
@@ -38,6 +80,9 @@ class Exercise {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      optimalCameraPlacement: OptimalCameraPlacement.fromString(
+        json['optimal_camera_placement'] as String?,
+      ),
     );
   }
 
@@ -52,6 +97,7 @@ class Exercise {
     String? thumbnailUrl,
     String? tips,
     List<String>? instructions,
+    OptimalCameraPlacement? optimalCameraPlacement,
   }) {
     return Exercise(
       id: id ?? this.id,
@@ -64,6 +110,8 @@ class Exercise {
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       tips: tips ?? this.tips,
       instructions: instructions ?? this.instructions,
+      optimalCameraPlacement:
+          optimalCameraPlacement ?? this.optimalCameraPlacement,
     );
   }
 
@@ -79,6 +127,7 @@ class Exercise {
       'thumbnail_url': thumbnailUrl,
       'tips': tips,
       'instructions': instructions,
+      'optimal_camera_placement': optimalCameraPlacement.dbValue,
       'is_global': isGlobal,
     };
     if (tenantId != null) {

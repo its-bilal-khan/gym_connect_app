@@ -36,6 +36,44 @@ class TenantRewardConfig {
     this.tier3Multiplier = 1.50,
   });
 
+  TenantRewardConfig copyWith({
+    String? rank1Title,
+    String? rank1Type,
+    dynamic rank1Value,
+    String? rank2Title,
+    String? rank2Type,
+    dynamic rank2Value,
+    String? rank3Title,
+    String? rank3Type,
+    dynamic rank3Value,
+    int? minMonthlyWorkoutsQualification,
+    int? tier1Days,
+    double? tier1Multiplier,
+    int? tier2Days,
+    double? tier2Multiplier,
+    int? tier3Days,
+    double? tier3Multiplier,
+  }) {
+    return TenantRewardConfig(
+      rank1Title: rank1Title ?? this.rank1Title,
+      rank1Type: rank1Type ?? this.rank1Type,
+      rank1Value: rank1Value ?? this.rank1Value,
+      rank2Title: rank2Title ?? this.rank2Title,
+      rank2Type: rank2Type ?? this.rank2Type,
+      rank2Value: rank2Value ?? this.rank2Value,
+      rank3Title: rank3Title ?? this.rank3Title,
+      rank3Type: rank3Type ?? this.rank3Type,
+      rank3Value: rank3Value ?? this.rank3Value,
+      minMonthlyWorkoutsQualification: minMonthlyWorkoutsQualification ?? this.minMonthlyWorkoutsQualification,
+      tier1Days: tier1Days ?? this.tier1Days,
+      tier1Multiplier: tier1Multiplier ?? this.tier1Multiplier,
+      tier2Days: tier2Days ?? this.tier2Days,
+      tier2Multiplier: tier2Multiplier ?? this.tier2Multiplier,
+      tier3Days: tier3Days ?? this.tier3Days,
+      tier3Multiplier: tier3Multiplier ?? this.tier3Multiplier,
+    );
+  }
+
   factory TenantRewardConfig.fromJson(Map<String, dynamic> json) {
     final rewards = (json['leaderboard_rewards'] as Map<String, dynamic>?) ?? {};
     final r1 = (rewards['rank_1'] as Map<String, dynamic>?) ?? {};

@@ -17,18 +17,21 @@ class WorkstationsHeaderToolbar extends ConsumerWidget {
 
     return Row(
       children: [
-        Text(
-          'EXECUTIVE WORKSTATIONS & CONTROLS',
-          style: GoogleFonts.oswald(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-            color: Colors.white,
+        Flexible(
+          child: Text(
+            'EXECUTIVE WORKSTATIONS & CONTROLS',
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.oswald(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              color: Colors.white,
+            ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
           decoration: BoxDecoration(
             color: accent.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(6),
@@ -37,22 +40,16 @@ class WorkstationsHeaderToolbar extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.drag_indicator_rounded, size: 13, color: accent),
-              const SizedBox(width: 4),
+              Icon(Icons.drag_indicator_rounded, size: 12, color: accent),
+              const SizedBox(width: 3),
               Text(
                 'DRAG TO REORDER',
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: accent,
-                  letterSpacing: 0.5,
-                ),
+                style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w700, color: accent),
               ),
             ],
           ),
         ),
         const Spacer(),
-        // Segmented Switcher for Option 3 (Enterprise) vs Option 1 (Bento Preview)
         Container(
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
@@ -68,9 +65,7 @@ class WorkstationsHeaderToolbar extends ConsumerWidget {
                 label: 'ENTERPRISE',
                 isSelected: currentMode == WorkstationViewMode.enterprise,
                 accent: accent,
-                onTap: () => ref
-                    .read(workstationViewModeProvider.notifier)
-                    .setViewMode(WorkstationViewMode.enterprise),
+                onTap: () => ref.read(workstationViewModeProvider.notifier).setViewMode(WorkstationViewMode.enterprise),
               ),
               const SizedBox(width: 4),
               _buildModeBtn(
@@ -78,9 +73,7 @@ class WorkstationsHeaderToolbar extends ConsumerWidget {
                 label: 'BENTO PREVIEW',
                 isSelected: currentMode == WorkstationViewMode.bentoPreview,
                 accent: accent,
-                onTap: () => ref
-                    .read(workstationViewModeProvider.notifier)
-                    .setViewMode(WorkstationViewMode.bentoPreview),
+                onTap: () => ref.read(workstationViewModeProvider.notifier).setViewMode(WorkstationViewMode.bentoPreview),
               ),
             ],
           ),
@@ -90,14 +83,11 @@ class WorkstationsHeaderToolbar extends ConsumerWidget {
           message: 'Reset workstations to default order',
           child: InkWell(
             onTap: () {
-              ref
-                  .read(workstationsOrderProvider(tenantId).notifier)
-                  .resetToDefault();
+              ref.read(workstationsOrderProvider(tenantId).notifier).resetToDefault();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   backgroundColor: AppColors.surface,
-                  content: Text('Layout reset to default order',
-                      style: GoogleFonts.inter(color: Colors.white)),
+                  content: Text('Layout reset to default order', style: GoogleFonts.inter(color: Colors.white)),
                   duration: const Duration(seconds: 2),
                 ),
               );
@@ -113,14 +103,9 @@ class WorkstationsHeaderToolbar extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.restore_rounded,
-                      size: 14, color: AppColors.textSecondary),
-                  const SizedBox(width: 5),
-                  Text('RESET',
-                      style: GoogleFonts.inter(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary)),
+                  Icon(Icons.restore_rounded, size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: 4),
+                  Text('RESET', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
                 ],
               ),
             ),
@@ -142,7 +127,7 @@ class WorkstationsHeaderToolbar extends ConsumerWidget {
       borderRadius: BorderRadius.circular(6),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected ? accent : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
@@ -150,14 +135,12 @@ class WorkstationsHeaderToolbar extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 13,
-                color: isSelected ? Colors.black : AppColors.textSecondary),
-            const SizedBox(width: 4),
+            Icon(icon, size: 12, color: isSelected ? Colors.black : AppColors.textSecondary),
+            const SizedBox(width: 3),
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 10,
+                fontSize: 9.5,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 color: isSelected ? Colors.black : AppColors.textSecondary,
               ),

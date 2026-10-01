@@ -9,6 +9,17 @@ import 'package:gym_connect_app/features/workout/presentation/widgets/confetti_c
 import 'package:gym_connect_app/features/workout/presentation/widgets/goal_onboarding_dialog.dart';
 import 'package:gym_connect_app/features/workout/presentation/widgets/gym_leaderboard_sheet.dart';
 import 'package:gym_connect_app/features/workout/presentation/widgets/weight_stepper_widget.dart';
+import 'package:gym_connect_app/features/gamification/domain/models/models.dart';
+import 'package:gym_connect_app/features/gamification/presentation/providers/dual_track_leaderboard_provider.dart';
+import 'package:gym_connect_app/features/gamification/presentation/providers/dual_track_leaderboard_state.dart';
+
+class FakeDualTrackLeaderboardNotifier extends DualTrackLeaderboardNotifier {
+  final DualTrackLeaderboardState initialState;
+  FakeDualTrackLeaderboardNotifier(this.initialState);
+
+  @override
+  DualTrackLeaderboardState build() => initialState;
+}
 
 void main() {
   group('Gamification & Streak Tests', () {
@@ -153,25 +164,36 @@ void main() {
       await tester.pump();
 
       expect(find.text('GYM LEADERBOARD'), findsOneWidget);
-      expect(find.text('NO WORKOUTS LOGGED THIS MONTH'), findsOneWidget);
-      expect(find.textContaining('YOUR STREAK:'), findsOneWidget);
+      expect(find.text('Monthly Race'), findsOneWidget);
+      expect(find.text('Hall of Fame'), findsOneWidget);
+      expect(find.textContaining('YOUR RANK:'), findsOneWidget);
     });
 
     testWidgets('GymLeaderboardSheet renders rankings and user stats with populated data', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            leaderboardProvider.overrideWith(
-              (ref) => Future.value([
-                const LeaderboardEntry(
-                  id: 'user-1',
-                  name: 'Zaid Khan',
-                  streakDays: 14,
-                  totalPoints: 1250,
-                  rank: 1,
-                  isCurrentUser: true,
+            dualTrackLeaderboardProvider.overrideWith(
+              () => FakeDualTrackLeaderboardNotifier(
+                const DualTrackLeaderboardState(
+                  monthlyMembers: [
+                    LeaderboardMember(
+                      userId: 'user-1',
+                      fullName: 'Zaid Khan',
+                      monthlyPoints: 1250,
+                      currentStreakDays: 14,
+                      rank: 1,
+                      isCurrentUser: true,
+                    ),
+                  ],
+                  memberStatus: {
+                    'monthly_rank': 1,
+                    'monthly_points': 1250,
+                    'current_streak_days': 14,
+                    'is_qualified': true,
+                  },
                 ),
-              ]),
+              ),
             ),
           ],
           child: const MaterialApp(
@@ -185,7 +207,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('GYM LEADERBOARD'), findsOneWidget);
-      expect(find.text('#1'), findsOneWidget);
+      expect(find.text('#1'), findsWidgets);
       expect(find.text('Zaid Khan'), findsOneWidget);
       expect(find.textContaining('1250 XP'), findsWidgets);
     });

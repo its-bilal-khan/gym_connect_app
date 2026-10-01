@@ -83,6 +83,7 @@ class AuthRepository {
     final response = await client.auth.signUp(
       email: cleanEmail,
       password: password,
+      emailRedirectTo: 'gymconnect://login-callback',
       data: {
         'full_name': cleanName,
         'role': 'member',

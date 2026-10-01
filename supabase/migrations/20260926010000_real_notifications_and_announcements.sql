@@ -28,7 +28,7 @@ CREATE POLICY "Users can view own or tenant notifications"
     ))
     OR EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('owner', 'super_admin', 'staff')
+      WHERE id = auth.uid() AND role::text IN ('gym_owner', 'owner', 'super_admin', 'staff')
     )
   );
 
@@ -39,14 +39,14 @@ CREATE POLICY "Users can update own notification read status"
     user_id = auth.uid()
     OR EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('owner', 'super_admin', 'staff')
+      WHERE id = auth.uid() AND role::text IN ('gym_owner', 'owner', 'super_admin', 'staff')
     )
   )
   WITH CHECK (
     user_id = auth.uid()
     OR EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('owner', 'super_admin', 'staff')
+      WHERE id = auth.uid() AND role::text IN ('gym_owner', 'owner', 'super_admin', 'staff')
     )
   );
 
@@ -56,7 +56,7 @@ CREATE POLICY "Authorized users can insert notifications"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('owner', 'super_admin', 'staff')
+      WHERE id = auth.uid() AND role::text IN ('gym_owner', 'owner', 'super_admin', 'staff')
     )
     OR user_id = auth.uid()
   );

@@ -594,7 +594,7 @@ class _GymOwnerPaymentApprovalsScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                'No pending manual transfer slips waiting for review.',
+                'No pending manual payments waiting for approval.',
                 style: GoogleFonts.inter(
                     fontSize: 13, color: AppColors.textSecondary),
               ),

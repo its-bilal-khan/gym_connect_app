@@ -9,6 +9,7 @@ import 'widgets/exercise_video_studio_tab.dart';
 import 'widgets/god_mode_audit_tab.dart';
 import 'widgets/onboard_gym_tab.dart';
 import 'widgets/saas_revenue_tab.dart';
+import 'widgets/super_admin_vision_ai_configurator.dart';
 import 'widgets/tenant_metric_header.dart';
 import 'widgets/tenant_operations_card.dart';
 import '../../../calculators/presentation/screens/calculators_hub_screen.dart';
@@ -73,6 +74,7 @@ class _DesktopSuperAdminWorkstationViewState
     (title: 'SAAS REVENUE & TIERS', icon: Icons.insights_rounded),
     (title: 'AUDIT & GOD MODE', icon: Icons.security_rounded),
     (title: 'FITNESS TOOLS', icon: Icons.calculate_rounded),
+    (title: 'VISION AI LIVE TRAINER', icon: Icons.psychology_alt_rounded),
   ];
 
   @override
@@ -88,6 +90,7 @@ class _DesktopSuperAdminWorkstationViewState
             3 => const SaasRevenueTab(),
             4 => const GodModeAuditTab(),
             5 => const CalculatorsHubScreen(),
+            6 => const SuperAdminVisionAiConfigurator(),
             _ => _buildTenantsDirectoryView(),
           },
         ),

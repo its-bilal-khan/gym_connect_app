@@ -23,6 +23,9 @@ class AuthNotifier extends Notifier<AppAuthState> {
     _authSub = repo.authStateChanges.listen((data) {
       if (data.event == AuthChangeEvent.signedOut) {
         state = const AuthUnauthenticated();
+      } else if (data.event == AuthChangeEvent.signedIn ||
+          data.event == AuthChangeEvent.tokenRefreshed) {
+        checkSession();
       }
     });
     ref.onDispose(() => _authSub?.cancel());

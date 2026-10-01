@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../gamification/presentation/widgets/adaptive_step_alert_card.dart';
+import '../../../../gamification/presentation/widgets/composite_compliance_ring_card.dart';
+import '../../../../gamification/presentation/widgets/diet_proof_card.dart';
+import '../../../../gamification/presentation/widgets/sleep_tracker_card.dart';
 import '../../../../notifications/presentation/widgets/urgent_dues_banner.dart';
-import '../../../../store/presentation/in_gym_store_screen.dart';
 import '../../../../tracking/presentation/providers/step_tracker_notifier.dart';
 import '../../../../tracking/presentation/step_tracker_full_screen.dart';
 import '../../../../workout/presentation/active_workout_screen.dart';
@@ -13,6 +16,8 @@ import '../../../../workout/presentation/providers/workout_notifier.dart';
 import '../../../../workout/presentation/widgets/ai_nutrition_fuel_card.dart';
 import '../../../../workout/presentation/widgets/gym_leaderboard_sheet.dart';
 import '../../../../workout/presentation/widgets/one_tap_action_card.dart';
+import 'in_gym_store_teaser_card.dart';
+import 'explore_reels_teaser_card.dart';
 import 'pedometer_card.dart';
 import 'profile_quest_card.dart';
 import 'streak_badge.dart';
@@ -50,9 +55,12 @@ class MemberTodayTab extends ConsumerWidget {
             ),
             const SizedBox(height: 14),
             const UrgentDuesBanner(),
+            const AdaptiveStepAlertCard(),
+            const CompositeComplianceRingCard(),
+            const SizedBox(height: 14),
             if (fitnessProfile?.profileCompleted != true) ...[
-              const SizedBox(height: 14),
               const ProfileQuestCard(),
+              const SizedBox(height: 14),
             ],
             if (routine != null) ...[
               OneTapActionCard(
@@ -64,6 +72,10 @@ class MemberTodayTab extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
             ],
+            const SleepTrackerCard(),
+            const SizedBox(height: 14),
+            const DietProofCard(),
+            const SizedBox(height: 14),
             AiNutritionFuelCard(
               targetCalories: fitnessProfile?.recommendedDailyCalories ?? (activeType == 'ectomorph' ? 2950 : (activeType == 'endomorph' ? 2150 : 2650)),
               proteinGrams: fitnessProfile?.recommendedProteinGrams ?? (activeType == 'ectomorph' ? 175 : (activeType == 'endomorph' ? 185 : 165)),
@@ -71,39 +83,9 @@ class MemberTodayTab extends ConsumerWidget {
               bodyTypeLabel: activeType.toUpperCase(),
             ),
             const SizedBox(height: 14),
-
-            InkWell(
-              onTap: () => InGymStoreScreen.open(context),
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                      radius: 18,
-                      child: Icon(Icons.storefront_rounded, color: AppColors.primary, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('IN-GYM PRO STORE & SHAKES', style: GoogleFonts.oswald(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                          Text('Supplements, chilled protein shakes & gear', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.textSecondary, size: 14),
-                  ],
-                ),
-              ),
-            ),
+            const InGymStoreTeaserCard(),
+            const SizedBox(height: 14),
+            const ExploreReelsTeaserCard(),
             const SizedBox(height: 14),
             PedometerCard(
               steps: stepData.steps,
