@@ -62,5 +62,45 @@
 - **Automatic Real-Time State & Design Reflection:**
   - Mini views must embed or directly replicate the live module's widget tree and Riverpod providers. Any design updates, theme accent switches, or live database updates (Supabase streams/providers) occurring in the module **MUST** automatically reflect inside its mini view in real-time with zero manual syncing.
 
+## 8. Full-Stack Vertical Slice Completion & Pending Backend Tracker (STRICT)
+- **End-to-End Vertical Slice Mandatory:**
+  - Whenever ANY module, feature, or workflow is started, it **MUST** be implemented completely across all layers:
+    1. **Database Layer:** Tables, DDL alterations, constraints, indexes, and Row Level Security (RLS) policies.
+    2. **Backend Logic Layer:** PostgreSQL RPC functions, triggers, Supabase Edge Functions, or cron jobs.
+    3. **Data Access & State Layer:** Immutable domain models, dedicated repositories, and Riverpod providers.
+    4. **Frontend UI Layer:** Responsive screens/dialogs with real loading, error, empty, and data states.
+  - **NEVER** leave a frontend screen half-baked or disconnected from live database tables.
+- **Immediate Escalation of Any Pending Backend Work:**
+  - If ANY backend component, RPC function, database column, webhook, or Edge Function is blocked, partially implemented, or pending for any reason:
+    1. **Immediately inform the user** in clear, prominent terms within the very same response.
+    2. **Maintain an active Pending Backend Tracker:** Explicitly document what is pending, which table/RPC is affected, why it is pending, and the concrete next step required to unblock it.
+    3. Never use placeholder code, mock data, or silent skips as an excuse for unbuilt backend infrastructure.
+
+## 9. Super Admin Supremacy, Feature Toggling & Full-Stack Configuration (STRICT)
+- **Super Admin Control:**
+  - All business logic variables (e.g., age limits, points thresholds, streak multipliers, anti-cheat tolerances) and configurations must be managed exclusively by the Super Admin, both globally and at the tenant level.
+- **Tenant Overrides (`allow_tenant_override`):**
+  - All configuration schemas must include an `allow_tenant_override` boolean flag.
+  - Tenants (Gym Owners) cannot modify any configuration or business variable unless the Super Admin explicitly enables this flag (`allow_tenant_override: true`) for that specific setting.
+- **Module/Feature Toggling:**
+  - Every major feature, tab, or module (e.g., AI Workouts, Gamification Core, Diet Logs, Clinical Tools) must be configurable with feature toggles.
+  - The Super Admin must be able to globally disable a module entirely (global killswitch), or selectively disable it for specific tenants.
+- **Mandatory Full-Stack Execution:**
+  - Whenever ANY new feature is developed, you (the AI) MUST automatically build its configuration settings across the entire stack:
+    1. **Database Layer:** JSONB schema in `global_system_settings` and `tenants.feature_flags` / `tenants.feature_overrides`.
+    2. **Backend Logic Layer:** PostgreSQL RPC enforcement functions (e.g. `is_feature_enabled(p_tenant_id, p_feature_key)`) that block execution if the feature is disabled.
+    3. **Super Admin UI Layer:** Management screens/dialogs in the Super Admin workstation to toggle settings and grant/revoke tenant override permissions.
+    4. **Client/Member UI Layer:** Reactive UI logic that hides, locks, or disables the feature's tabs, buttons, and views when turned off.
+
+## 10. Comprehensive Implementation Reporting & Review Transparency (STRICT)
+- **Mandatory Exhaustive Reporting:**
+  - Whenever ANY feature, fix, module, database migration, backend RPC, state provider, or UI widget is implemented or refactored, you (the AI) **MUST** provide a comprehensive, transparent, and detailed technical explanation in your response.
+  - Never provide vague, generic, or brief one-liner summaries. The user must be equipped with complete visibility to audit and review whether every requirement was implemented correctly.
+- **Required Implementation Breakdown:**
+  1. **Architectural & Business Logic Rationale:** Clear walkthrough of the design decisions, mathematical formulas, liability checks, and security constraints implemented.
+  2. **Layer-by-Layer File Tracking:** Clickable links for all files created or modified across all 4 layers (Database/SQL, Data Access/Repositories, State/Providers, UI Components).
+  3. **Exact Diffs & Code Modifications:** Specific details on what was added, removed, or refactored in each file, including modular extractions to respect the `< 150 lines` rule.
+  4. **Strict Rules Compliance Checklist:** Explicit confirmation of zero mock data (Rule 1), `< 150 lines` (Rule 2), dynamic theme runtime detection (Rule 6), Super Admin supremacy (Rule 9), and liability safeguards.
+  5. **Testing & Verification Evidence:** Exact test commands executed, individual test case assertions passed, and static analyzer verification (`flutter analyze` with 0 issues).
 
 

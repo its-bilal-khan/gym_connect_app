@@ -210,3 +210,84 @@
   1. Open **Supabase Project Dashboard** -> **SQL Editor** -> **New Query**.
   2. Paste the contents of [supabase_seed_workouts.sql](file:///d:/gym/supabase_seed_workouts.sql).
   3. Click **Run**. (It safely updates existing tables and seeds real exercises, multi-angle videos, 90-day routines, and badges in one go).
+
+### C. Gamification, Vision AI & Anti-Cheat Core Migration (Phase 1)
+- **Path:** [20260928000000_gamification_ai_and_anticheat_core.sql](file:///d:/gym/supabase/migrations/20260928000000_gamification_ai_and_anticheat_core.sql)
+- **Features Delivered:**
+  - `tenants`: Null-safe `leaderboard_rewards` JSONB default, `min_monthly_workouts_qualification`, and `veteran_multiplier_config`.
+  - `profiles`: Hardware `primary_device_id` single-device lock and binding.
+  - `user_fitness_profiles`: `assigned_workout_track` ('track_a' vs 'track_b' low-impact beginner), `current_step_target`, `base_step_target`, `consecutive_target_misses`, and `medical_injuries`.
+  - `exercises`: `contraindicated_injuries`, `swap_group_id`, and `ml_pose_exercise_type`.
+  - `daily_gamification_logs`: 80% composite threshold evaluation, gate check-in status, native sleep/step source tracking, and unexcused penalty logs.
+  - `member_workout_reels`: 60–90s stitched video highlights, thumbnails, streak badges, and Explore Shorts feed support.
+  - `monthly_leaderboard_archives`: Podium archives with automated 30-day subscription extensions and Rs. 0 invoice generation.
+  - `gamification_flagged_queue`: Moderation queue for fraud detection and points clawbacks.
+  - **PostgreSQL RPCs:** `rpc_submit_daily_activity()`, `rpc_daily_midnight_audit()` (with freeze/sick leave shield), `rpc_monthly_leaderboard_reset()`, and `rpc_clawback_flagged_points()`.
+  - **Automated pg_cron:** Safely scheduled daily midnight audit (`59 23 * * *`) and 1st of month reset (`0 0 1 * *`).
+
+### D. Gamification Phase 1 One-Click Seed Script
+- **Path:** [supabase_seed_gamification.sql](file:///d:/gym/supabase_seed_gamification.sql)
+- Realistic Pakistani test data for Track A & Track B members, veteran streaks, daily composite scores, past month archives, and explore reels.
+
+### E. Static Master Template Engine (Phase 2 - 100% Complete)
+- **Database Migration:** [20260929000000_ai_workout_engine_backend.sql](file:///d:/gym/supabase/migrations/20260929000000_ai_workout_engine_backend.sql)
+  - Schema Extensions: `assigned_track` and `user_id` on `workout_routines`; `current_workout_routine_id` and `body_type VARCHAR(50)` on `user_fitness_profiles`.
+  - Master Template Mapping: Unique partial index `uq_workout_routines_global_body_type_track` on `(LOWER(body_type), assigned_track)` and tenant counterpart `uq_workout_routines_tenant_body_type_track`, enabling Super Admin to add unlimited new Body Types (e.g. `V-Shape`, `Heavyweight`, `Mesomorph`, `Endomorph`, `Ectomorph`), each requiring simply a Track A and Track B template.
+  - Core Master Templates: Seeded Track A (Dynamic Progressive Overload) and Track B (Low-Impact Foundation) across all standard and custom body types (`mesomorph`, `v_shape`, `heavyweight`, `endomorph`, `ectomorph`).
+  - Automatic `swap_group_id` & `contraindicated_injuries` categorization across exercises catalog.
+  - `rpc_assign_master_workout_template`: Strict Hierarchical Flow:
+    1. Member selects `target_body_type` (e.g. V-Shape, Heavyweight) during onboarding.
+    2. Member inputs Age, Weight, and Height.
+    3. RPC calculates BMI (`weight / height_m^2`).
+    4. RPC calculates `assigned_track` (Track A for normal/low BMI, Track B for high BMI / overweight / senior).
+    5. RPC queries master templates using BOTH conditions: `target_body_type = user_input AND assigned_track = calculated_track` (Priority 1: Tenant custom, Priority 2: Platform global, Priority 3: Fallback).
+    6. Clones template, executes SQL injury substitutions via `swap_group_id`, and binds routine and recommendation metadata to `user_fitness_profiles`.
+  - Zero LLM/OpenAI dependency: Eliminates API costs, token fees, rate limits, and latency.
+- **Supabase Edge Function:** [supabase/functions/generate-ai-workout/index.ts](file:///d:/gym/supabase/functions/generate-ai-workout/index.ts)
+  - Lean microservice passing member biometrics and `targetBodyType` directly to `rpc_assign_master_workout_template`.
+  - Sub-50ms execution speed with zero external API dependencies.
+- **Data Access & State Layer:**
+  - [AiWorkoutRepository](file:///d:/gym/gym_connect_app/lib/features/workout/data/ai_workout_repository.dart): Calls `rpc_assign_master_workout_template` with `p_target_body_type` and Edge Function fallback.
+  - [aiWorkoutProvider](file:///d:/gym/gym_connect_app/lib/features/workout/presentation/providers/ai_workout_provider.dart): Riverpod state notifier passing `bodyType`, biometrics, and medical injuries.
+  - [UserFitnessProfile](file:///d:/gym/gym_connect_app/lib/features/workout/domain/models/fitness_profile_model.dart): Enhanced with `assignedWorkoutTrack`, `medicalInjuries`, `currentStepTarget`, and silent `bmi` getter.
+  - [WorkoutRepository](file:///d:/gym/gym_connect_app/lib/features/workout/data/workout_repository.dart): Prioritizes member personalized routine over tenant default.
+- **Frontend UI & 1-Tap Swap:**
+  - [AiWorkoutSynthesizerSheet](file:///d:/gym/gym_connect_app/lib/features/workout/presentation/widgets/ai_workout_synthesizer_sheet.dart): UI modal under 150 lines passing member `bodyType` with live silent BMI preview and Track A/B routing badge.
+  - [AiWorkoutMetricInputs](file:///d:/gym/gym_connect_app/lib/features/workout/presentation/widgets/ai_workout_metric_inputs.dart): Metric steppers and injury chips.
+  - [ExerciseSwapSheet](file:///d:/gym/gym_connect_app/lib/features/workout/presentation/widgets/exercise_swap_sheet.dart): 1-Tap zero-penalty manual exercise swap in [ActiveWorkoutScreen](file:///d:/gym/gym_connect_app/lib/features/workout/presentation/active_workout_screen.dart).
+- **Test Suite:** [ai_workout_engine_test.dart](file:///d:/gym/gym_connect_app/test/ai_workout_engine_test.dart) (All 6 unit & widget tests passed, 100%).
+- **Analyzer Health:** `flutter analyze` verified clean (0 errors, 0 warnings).
+
+### F. Strict Rule 9: Super Admin Supremacy, Feature Toggling & Full-Stack Configuration (100% Complete)
+- **Core Rules Updated:** [.rules](file:///d:/gym/.rules) & [AGENTS.md](file:///d:/gym/AGENTS.md) permanently updated with Section 9 detailing all 4 clauses (Super Admin Control, Tenant Overrides with `allow_tenant_override`, Module/Feature Toggling, and Mandatory Full-Stack Execution).
+- **Database Migration:** [20261001000000_super_admin_feature_toggles_and_configs.sql](file:///d:/gym/supabase/migrations/20261001000000_super_admin_feature_toggles_and_configs.sql)
+  - Created `global_system_settings` table (key-value JSONB, `allow_tenant_override`, RLS restricted to `super_admin`).
+  - Altered `tenants` table with `feature_flags`, `allow_tenant_overrides`, and `config_overrides` JSONB columns.
+  - Implemented `is_feature_enabled(p_tenant_id, p_feature_key)` PostgreSQL function enforcing global killswitches before tenant-level flags.
+  - Implemented `rpc_get_effective_feature_flags` and `rpc_get_effective_system_config`.
+  - Implemented `rpc_super_admin_set_global_feature_flag`, `rpc_super_admin_set_tenant_feature_flag`, and `rpc_super_admin_update_global_config`.
+  - Implemented `rpc_tenant_owner_update_config_override` strictly blocking gym owners from overriding settings unless `allow_tenant_override` is enabled by Super Admin.
+  - Hardened `rpc_assign_static_master_workout_protocol` with `is_feature_enabled(v_tenant_id, 'ai_workouts')` guard.
+- **Data Access & State Layer:**
+  - [SystemFeatureFlags](file:///d:/gym/gym_connect_app/lib/features/super_admin/domain/models/system_feature_flags.dart): Domain model for module flags and `GlobalSystemConfig`.
+  - [SystemFeatureToggleRepository](file:///d:/gym/gym_connect_app/lib/features/super_admin/data/system_feature_toggle_repository.dart): Repository with Riverpod providers `currentTenantFeatureFlagsProvider`, `effectiveFeatureFlagsProvider`, and `globalSystemSettingsProvider`.
+- **Super Admin Workstation UI:**
+  - [SuperAdminFeatureFlagsSheet](file:///d:/gym/gym_connect_app/lib/features/super_admin/presentation/widgets/super_admin_feature_flags_sheet.dart): BottomSheet with global & tenant toggle controls.
+  - [SuperAdminFeatureTile](file:///d:/gym/gym_connect_app/lib/features/super_admin/presentation/widgets/super_admin_feature_tile.dart): Modular widget with feature toggle & `allow_tenant_override` switch.
+  - [Rule9FeatureTogglesBanner](file:///d:/gym/gym_connect_app/lib/features/super_admin/presentation/desktop/widgets/rule9_feature_toggles_banner.dart): Prominent banner in God Mode tab.
+- **Member UI Gating:**
+  - [MemberProfileModulesList](file:///d:/gym/gym_connect_app/lib/features/shells/member/presentation/widgets/member_profile_modules_list.dart): Reactive UI hiding deactivated modules (`ai_workouts`, `clinical_tools`, `gamification`).
+  - [AiWorkoutSynthesizerSheet](file:///d:/gym/gym_connect_app/lib/features/workout/presentation/widgets/ai_workout_synthesizer_sheet.dart): Gated with disabled advisory and disabled action button if turned off.
+- **Test Suite:** [rule9_super_admin_feature_flags_test.dart](file:///d:/gym/gym_connect_app/test/rule9_super_admin_feature_flags_test.dart) (All 7 unit tests passed, 100%).
+- **Analyzer Health:** `flutter analyze` verified clean (0 issues, ran in 2.8s).
+
+---
+
+## 📋 Active Pending Backend Tracker (Strict Rule 8)
+- **Current Status:** 🟢 **0 Pending Items**.
+- **Rule 9 (Super Admin Supremacy & Feature Toggling):** 100% COMPLETE across Database, RPCs, Domain, Super Admin UI, and Member UI.
+- **Phase 1 (Database Core & Gamification Schema):** 100% COMPLETE.
+- **Phase 2 (Static Master Template Workout Engine):** 100% COMPLETE.
+- **Next Phase:** **Phase 3 (Data Layer, Domain Models & Riverpod Providers for Vision AI & Gamification)**.
+
+

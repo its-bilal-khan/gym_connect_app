@@ -60,11 +60,24 @@ class GymLeaderboardSheet extends ConsumerWidget {
               loading: () => const Expanded(child: Center(child: CircularProgressIndicator())),
               error: (err, _) => Expanded(child: Center(child: Text('Failed to load leaderboard', style: GoogleFonts.inter(color: AppColors.error)))),
               data: (entries) => Expanded(
-                child: ListView.separated(
-                  itemCount: entries.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (ctx, i) => _buildEntryTile(entries[i], accent),
-                ),
+                child: entries.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.emoji_events_outlined, size: 44, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+                            const SizedBox(height: 10),
+                            Text('NO WORKOUTS LOGGED THIS MONTH', style: GoogleFonts.oswald(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                            const SizedBox(height: 4),
+                            Text('Be the first to log a session and claim #1 rank!', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: entries.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (ctx, i) => _buildEntryTile(entries[i], accent),
+                      ),
               ),
             ),
             const SizedBox(height: 12),

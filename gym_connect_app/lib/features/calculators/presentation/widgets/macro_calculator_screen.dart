@@ -11,8 +11,7 @@ class MacroCalculatorScreen extends StatefulWidget {
   State<MacroCalculatorScreen> createState() => _MacroCalculatorScreenState();
 }
 
-class _MacroCalculatorScreenState extends State<MacroCalculatorScreen>
-    with SingleTickerProviderStateMixin {
+class _MacroCalculatorScreenState extends State<MacroCalculatorScreen> {
   double _totalCalories = 2200;
   double _proteinPct = 30;
   double _carbsPct = 40;
@@ -20,9 +19,6 @@ class _MacroCalculatorScreenState extends State<MacroCalculatorScreen>
 
   int _presetIndex = 0;
   MacroResult? _result;
-
-  late AnimationController _animController;
-  late Animation<double> _donutAnim;
 
   static const _presets = [
     ('Balanced', 30.0, 40.0, 30.0),
@@ -35,20 +31,7 @@ class _MacroCalculatorScreenState extends State<MacroCalculatorScreen>
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
-    _donutAnim = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
-    );
     _calculate();
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
   }
 
   void _applyPreset(int idx) {
@@ -73,7 +56,6 @@ class _MacroCalculatorScreenState extends State<MacroCalculatorScreen>
         fatPct: _fatPct,
       );
     });
-    _animController.forward(from: 0);
   }
 
   @override
@@ -172,6 +154,7 @@ class _MacroCalculatorScreenState extends State<MacroCalculatorScreen>
               _proteinPct = v;
               _presetIndex = 4; // Custom
             });
+            _calculate();
           },
         ),
         const SizedBox(height: 10),
@@ -185,6 +168,7 @@ class _MacroCalculatorScreenState extends State<MacroCalculatorScreen>
               _carbsPct = v;
               _presetIndex = 4;
             });
+            _calculate();
           },
         ),
         const SizedBox(height: 10),
@@ -198,34 +182,11 @@ class _MacroCalculatorScreenState extends State<MacroCalculatorScreen>
               _fatPct = v;
               _presetIndex = 4;
             });
+            _calculate();
           },
         ),
         const SizedBox(height: 6),
         _buildTotalPctWarning(),
-        const SizedBox(height: 18),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _calculate,
-            icon: const Icon(Icons.calculate_rounded, size: 20),
-            label: Text(
-              'CALCULATE MACROS',
-              style: GoogleFonts.oswald(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.0,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -279,8 +240,10 @@ class _MacroCalculatorScreenState extends State<MacroCalculatorScreen>
               min: 1000,
               max: 5000,
               divisions: 80,
-              onChanged: (v) =>
-                  setState(() => _totalCalories = v),
+              onChanged: (v) {
+                setState(() => _totalCalories = v);
+                _calculate();
+              },
             ),
           ),
         ],
@@ -483,44 +446,39 @@ class _MacroCalculatorScreenState extends State<MacroCalculatorScreen>
             ),
           ),
           const SizedBox(height: 20),
-          AnimatedBuilder(
-            animation: _donutAnim,
-            builder: (context, _) {
-              return SizedBox(
-                width: 200,
-                height: 200,
-                child: CustomPaint(
-                  painter: _MacroDonutPainter(
-                    proteinPct: res.proteinPct,
-                    carbsPct: res.carbsPct,
-                    fatPct: res.fatPct,
-                    progress: _donutAnim.value,
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${res.totalCalories}',
-                          style: GoogleFonts.oswald(
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'kcal',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
+          SizedBox(
+            width: 200,
+            height: 200,
+            child: CustomPaint(
+              painter: _MacroDonutPainter(
+                proteinPct: res.proteinPct,
+                carbsPct: res.carbsPct,
+                fatPct: res.fatPct,
+                progress: 1.0,
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${res.totalCalories}',
+                      style: GoogleFonts.oswald(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
+                    Text(
+                      'kcal',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            },
+              ),
+            ),
           ),
           const SizedBox(height: 18),
           Row(

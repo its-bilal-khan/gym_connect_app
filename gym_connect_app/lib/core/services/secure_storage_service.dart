@@ -253,6 +253,14 @@ class SecureStorageService {
     return _read(key);
   }
 
+  Future<void> saveWorkstationViewMode(String mode) async {
+    await _write('owner_workstation_view_mode', mode);
+  }
+
+  Future<String?> getWorkstationViewMode() async {
+    return _read('owner_workstation_view_mode');
+  }
+
   Future<void> clearAll() async {
     try {
       await _storage.deleteAll();

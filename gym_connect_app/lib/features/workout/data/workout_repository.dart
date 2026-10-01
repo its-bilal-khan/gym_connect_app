@@ -22,17 +22,32 @@ class WorkoutRepository {
     int dayNumber = 1,
     String bodyType = 'mesomorph',
     String? tenantId,
+    String? userId,
   }) async {
     final client = _supabase;
     final cleanType = bodyType.toLowerCase().trim();
     final weeklyDay = ((dayNumber - 1) % 7) + 1;
+    final effectiveUserId = userId ?? client?.auth.currentUser?.id;
 
     if (client != null) {
       try {
         String? routineId;
 
+        // 0. Member Personal AI Routine Priority (Check user's active AI routine)
+        if (effectiveUserId != null && effectiveUserId.isNotEmpty) {
+          final userAiRes = await client
+              .from('workout_routines')
+              .select('id')
+              .eq('user_id', effectiveUserId)
+              .eq('is_ai_generated', true)
+              .order('created_at', ascending: false)
+              .limit(1)
+              .maybeSingle();
+          routineId = userAiRes?['id'] as String?;
+        }
+
         // 1. Hierarchical check: Gym custom protocol first
-        if (tenantId != null && tenantId.isNotEmpty) {
+        if (routineId == null && tenantId != null && tenantId.isNotEmpty) {
           final tenantRes = await client
               .from('workout_routines')
               .select('id')

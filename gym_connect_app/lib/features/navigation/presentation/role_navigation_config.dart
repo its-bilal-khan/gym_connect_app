@@ -134,6 +134,12 @@ abstract final class RoleNavigationConfig {
             selectedIcon: Icons.videocam_rounded,
           ),
           NavDestinationItem(
+            id: 'tools',
+            label: 'Tools',
+            icon: Icons.calculate_outlined,
+            selectedIcon: Icons.calculate_rounded,
+          ),
+          NavDestinationItem(
             id: 'settings',
             label: 'Settings',
             icon: Icons.tune_rounded,
@@ -200,6 +206,12 @@ abstract final class RoleNavigationConfig {
             label: 'Shift Tally',
             icon: Icons.account_balance_wallet_outlined,
             selectedIcon: Icons.account_balance_wallet_rounded,
+          ),
+          NavDestinationItem(
+            id: 'tools',
+            label: 'Tools',
+            icon: Icons.calculate_outlined,
+            selectedIcon: Icons.calculate_rounded,
           ),
         ];
 
@@ -288,6 +300,12 @@ abstract final class RoleNavigationConfig {
             label: 'Memberships',
             icon: Icons.card_membership_outlined,
             selectedIcon: Icons.card_membership_rounded,
+          ),
+          NavDestinationItem(
+            id: 'tools',
+            label: 'Tools',
+            icon: Icons.calculate_outlined,
+            selectedIcon: Icons.calculate_rounded,
           ),
         ];
     }

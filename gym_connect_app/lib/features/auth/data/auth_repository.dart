@@ -31,23 +31,21 @@ class AuthRepository {
   Future<Session?> restoreSession() async {
     final client = _supabase;
     if (client == null) return null;
-
     try {
       if (client.auth.currentSession != null) {
         await _persistCurrentSession(client.auth.currentSession!);
         return client.auth.currentSession;
       }
-
       final refreshToken = await _storage.getRefreshToken();
       if (refreshToken != null && refreshToken.isNotEmpty) {
-        final response = await client.auth.setSession(refreshToken);
-        if (response.session != null) {
-          await _persistCurrentSession(response.session!);
-          return response.session;
+        final res = await client.auth.setSession(refreshToken);
+        if (res.session != null) {
+          await _persistCurrentSession(res.session!);
+          return res.session;
         }
       }
     } catch (e) {
-      debugPrint('AuthRepository: Session restoration notice: $e');
+      debugPrint('AuthRepository: restoreSession error: $e');
     }
     return null;
   }
@@ -60,17 +58,69 @@ class AuthRepository {
     if (client == null) {
       throw const AuthException('Supabase connection is not initialized');
     }
-
     final response = await client.auth.signInWithPassword(
       email: email.trim(),
       password: password,
     );
-
     if (response.session != null) {
       await _persistCurrentSession(response.session!);
     }
-
     return response;
+  }
+
+  Future<AuthResponse> signUpWithPassword({
+    required String email,
+    required String password,
+    required String fullName,
+    String? tenantId,
+  }) async {
+    final client = _supabase;
+    if (client == null) {
+      throw const AuthException('Supabase connection is not initialized');
+    }
+    final cleanEmail = email.trim();
+    final cleanName = fullName.trim();
+    final response = await client.auth.signUp(
+      email: cleanEmail,
+      password: password,
+      data: {
+        'full_name': cleanName,
+        'role': 'member',
+        if (tenantId != null && tenantId.isNotEmpty) 'tenant_id': tenantId,
+      },
+    );
+    if (response.session != null) {
+      await _persistCurrentSession(response.session!);
+    }
+    if (response.user != null) {
+      await syncNewUserProfiles(
+        userId: response.user!.id,
+        email: cleanEmail,
+        fullName: cleanName,
+        tenantId: tenantId,
+      );
+    }
+    return response;
+  }
+
+  Future<void> syncNewUserProfiles({
+    required String userId,
+    required String email,
+    required String fullName,
+    String? tenantId,
+  }) async {
+    final client = _supabase;
+    if (client == null) return;
+    try {
+      await client.rpc('rpc_sync_new_user_profile', params: {
+        'p_user_id': userId,
+        'p_email': email,
+        'p_full_name': fullName,
+        if (tenantId != null && tenantId.isNotEmpty) 'p_tenant_id': tenantId,
+      });
+    } catch (e) {
+      debugPrint('AuthRepository: sync fallback error: $e');
+    }
   }
 
   Future<void> signOut() async {
@@ -87,14 +137,13 @@ class AuthRepository {
     final client = _supabase;
     if (client != null) {
       try {
-        final response = await client
+        final res = await client
             .from('profiles')
             .select('*, tenants(name, branding)')
             .eq('id', userId)
             .maybeSingle();
-
-        if (response != null) {
-          final profile = UserProfile.fromJson(response);
+        if (res != null) {
+          final profile = UserProfile.fromJson(res);
           if (profile.tenantId != null) {
             await _storage.saveTenantId(profile.tenantId!);
           }
@@ -104,10 +153,8 @@ class AuthRepository {
         debugPrint('AuthRepository: fetchUserProfile error: $e');
       }
     }
-
     final user = _supabase?.auth.currentUser;
     final metaRole = user?.userMetadata?['role'] as String?;
-
     return UserProfile(
       id: userId,
       role: UserRole.fromString(metaRole),

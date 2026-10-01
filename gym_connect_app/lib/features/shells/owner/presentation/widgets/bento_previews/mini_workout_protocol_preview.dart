@@ -344,7 +344,7 @@ class MiniWorkoutProtocolPreview extends ConsumerWidget {
               child: Image.asset(
                 assetImage,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (context, error, stackTrace) => Container(
                   color: Colors.white12,
                   child: const Icon(Icons.fitness_center_rounded, size: 16, color: Colors.white54),
                 ),

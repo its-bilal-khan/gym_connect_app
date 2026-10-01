@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../auth/domain/models/user_profile.dart';
+import '../../../calculators/presentation/screens/calculators_hub_screen.dart';
 import '../../../store/presentation/in_gym_store_screen.dart';
 
 class PublicShellView extends StatelessWidget {
@@ -23,8 +24,10 @@ class PublicShellView extends StatelessWidget {
       case 1:
         return _buildGuestPassTab(context);
       case 2:
-      default:
         return _buildPlansTab(context);
+      case 3:
+      default:
+        return const CalculatorsHubScreen();
     }
   }
 

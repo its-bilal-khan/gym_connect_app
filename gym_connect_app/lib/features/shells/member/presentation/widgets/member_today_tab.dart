@@ -14,6 +14,7 @@ import '../../../../workout/presentation/widgets/ai_nutrition_fuel_card.dart';
 import '../../../../workout/presentation/widgets/gym_leaderboard_sheet.dart';
 import '../../../../workout/presentation/widgets/one_tap_action_card.dart';
 import 'pedometer_card.dart';
+import 'profile_quest_card.dart';
 import 'streak_badge.dart';
 import 'transformation_spotlight_card.dart';
 
@@ -49,6 +50,10 @@ class MemberTodayTab extends ConsumerWidget {
             ),
             const SizedBox(height: 14),
             const UrgentDuesBanner(),
+            if (fitnessProfile?.profileCompleted != true) ...[
+              const SizedBox(height: 14),
+              const ProfileQuestCard(),
+            ],
             if (routine != null) ...[
               OneTapActionCard(
                 routine: routine,

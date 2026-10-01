@@ -3,21 +3,23 @@
 ## 1. Core Color Palette (Dark Theme Mandatory)
 *   **Primary Background:** Use `#09090B` (Deep Charcoal) for all scaffold backgrounds. Do not use absolute black (`#000000`).
 *   **Surface & Cards:** Use `#18181B` for elevated widgets, POS panels, modals, and AI Trainer cards to create depth.
-*   **Primary Accent:** Default to `#CCFF00` (Neon Volt Green) for primary buttons, active states, and progress rings.
+*   **Primary Accents (4 Official Presets):**
+    1. `#CCFF00` (Neon Volt Green - High-voltage athletic energy) [Default]
+    2. `#4F7CFF` (Electric Blue - Clean high-tech precision)
+    3. `#F4E87C` (Soft Premium Light Yellow - Warm luxury & gold prestige)
+    4. `#A78BFA` (Soft Lavender Purple - Futuristic sleek pastel violet)
 *   **Text & Status Colors:** Use `#FFFFFF` for primary text, `#A1A1AA` for secondary text/subtitles, and `#FF4444` strictly for errors or low-stock alerts.
 
-## 2. Typography Guidelines
-*   **Headings & Metrics:** Implement `Oswald` or `Bebas Neue` (Bold) for all titles, workout reps/sets, and financial dashboard metrics.
-*   **Body & UI Elements:** Implement `Inter` or `Poppins` (Regular/Medium) for standard descriptions, lists, POS tables, and input fields.
+## 2. Multi-Tenant Theme Switching & Permanent Lock Protocol
+*   **Mobile & Desktop Switcher:** Both platforms provide seamless 1-tap switching between the 4 accent presets (`ShellAppBar`, `UserAccountHubSheet`, `AdaptiveSidebar`, `OwnerSettingsTab`).
+*   **Gym Owner Permanent Lock:** When a gym owner/tenant selects a color, they are prompted to confirm if they want to lock it permanently for their gym.
+*   **Locked State Behavior:** Once locked permanently (`theme_locked: true` in Supabase `tenants.branding`), the chosen color scheme runs everywhere across all screens for their members and staff.
+*   **Theme Change Requests:** To switch colors after locking, the gym owner must generate a Theme Change Request for Super Admin review. Direct unauthorized overrides are prevented.
 
-## 3. Aesthetic & Micro-Interaction Rules
-*   **Component Shapes:** Apply `BorderRadius.circular(16)` globally to all cards, modals, and primary buttons for a modern feel.
-*   **Glassmorphism Effects:** Utilize `BackdropFilter` with blur effects for bottom navigation bars, overlays, and floating dialogues on top of the dark theme.
-*   **Action Feedback:** Add subtle neon glow effects (using BoxShadow) behind primary action buttons. Implement `HapticFeedback.heavyImpact()` for critical hardware triggers (e.g., Gate Unlock, Rest Timer Zero).
-
-## 4. Multi-Tenant Dynamic Branding logic
-*   **Brand Overrides:** Structure the Flutter app's `ThemeData` so the primary accent color (`#CCFF00`) can be dynamically overridden by fetching the specific Tenant's color from Supabase.
-*   **Contrast Safety:** Ensure that any dynamically injected tenant colors maintain high contrast against the `#18181B` surface color.
+## 3. Runtime Dynamic Theme Accent Detection (STRICT)
+*   **Zero Static Accent Hardcoding:** NEVER hardcode `#CCFF00` or fixed accent colors directly in widgets, buttons, badges, borders, or icons.
+*   **Dynamic Runtime Detection:** Whenever ANY module, widget, or screen is developed, it MUST dynamically detect and use the currently selected theme accent color at runtime via `Theme.of(context).colorScheme.primary`, `AppColors.accent(context)`, or `AppColors.primary` / `AppColors.primaryAccent` (which dynamically syncs with the active tenant preset).
+*   **Universal Real-Time Reflection:** All screens (Dashboard overview, Workstations, Workout Protocol Studio, Store, Dialogs, Khata, Check-in) must instantly reflect the selected color scheme in real time without restarting.
 
 # AI SYSTEM ROLE & STRICT CODING STANDARDS
 **Role:** Act as a Principal Software Engineer and Security Architect with 10+ years of experience in Flutter, Supabase, and Node.js. 
@@ -37,4 +39,23 @@
    - All application data MUST be fetched from and written to live Supabase database tables via dedicated repositories and Riverpod providers.
    - If initial/sample data is needed for development or onboarding, it MUST be injected into the PostgreSQL database using SQL seed scripts (`.sql` seeders).
    - Even database seed data MUST be realistic, authentic, and professional (real gym supplements, realistic Pakistani & international pricing, authentic transformation protocols)—never cheap or unrealistic placeholder text.
-   - The UI must always handle real database states (loading, error, empty, data).
+   - The UI must always handle real database states (loading, error, empty, data).
+7. **Universal Mini View Standard (STRICT):**
+   - Whenever ANY module, screen, or workstation is built, it MUST have an associated Mini View (scaled live preview).
+   - Mini views MUST exactly replicate the original module UI and layout, not arbitrary placeholder text or unrelated cards.
+   - Any design, theme accent, or real-time database updates in the module MUST automatically reflect in the mini view without manual sync.
+8. **Full-Stack Vertical Slice & Pending Backend Tracker (STRICT):**
+   - Whenever ANY module is started, it MUST be built completely from end-to-end: Database Schema & RLS -> Backend RPC/Edge Functions -> Repositories & State -> Frontend UI.
+   - NEVER leave a frontend UI without connecting it to its real backend and database tables.
+   - If ANY backend piece is pending or blocked, you MUST immediately notify the user and maintain a dedicated Pending Backend Tracker detailing what is pending, which table/RPC is affected, and why.
+9. **Super Admin Supremacy, Feature Toggling & Full-Stack Configuration (STRICT):**
+   - **Super Admin Control:** All business logic variables (e.g., age limits, points thresholds, streak multipliers) and configurations must be managed exclusively by the Super Admin, both globally and at the tenant level.
+   - **Tenant Overrides:** Configuration schemas must include an `allow_tenant_override` boolean. Tenants (Gym Owners) cannot modify any configuration unless the Super Admin explicitly enables this flag for that specific setting.
+   - **Module/Feature Toggling:** Every major feature, tab, or module (e.g., AI Workouts, Gamification, Diet Logs, Clinical Tools) must be configurable. The Super Admin must be able to globally disable a module entirely, or disable it for specific tenants.
+   - **Mandatory Full-Stack Execution:** Whenever a new feature is developed, you (the AI) MUST automatically build its configuration settings across the entire stack: Database JSONB structure -> Backend RPC enforcement logic (checking if feature is enabled) -> Super Admin frontend UI to toggle settings -> Member/Client UI logic to hide/disable the feature's tabs or buttons if turned off.
+10. **Comprehensive Implementation Reporting & Review Transparency (STRICT):**
+   - **Mandatory Exhaustive Reporting:** Whenever ANY feature, fix, module, database migration, backend RPC, state provider, or UI widget is implemented or refactored, you (the AI) MUST provide a comprehensive, transparent, and detailed technical explanation in your response so the user can review and audit whether it was implemented correctly.
+   - **Required Report Structure:** Core architectural rationale, layer-by-layer clickable file links, exact diffs and line counts, strict compliance checklist, and automated testing/analyzer proof.
+
+
+

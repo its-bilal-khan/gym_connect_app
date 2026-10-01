@@ -204,7 +204,7 @@ class _DesktopMemberHubScreenState extends ConsumerState<DesktopMemberHubScreen>
                     existingMembers: allMembers,
                     onConfirmImport: (validMembers) async {
                       final success = await ref.read(membersNotifierProvider.notifier).importBatch(validMembers, tenantId: widget.profile.tenantId ?? '');
-                      if (!context.mounted) return;
+                      if (!mounted) return;
                       final mState = ref.read(membersNotifierProvider);
                       if (success) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -580,7 +580,7 @@ class _DesktopMemberHubScreenState extends ConsumerState<DesktopMemberHubScreen>
             existingMembers: allMembers,
             onConfirmImport: (validMembers) async {
               final success = await ref.read(membersNotifierProvider.notifier).importBatch(validMembers, tenantId: tenantId);
-              if (!context.mounted) return;
+              if (!mounted) return;
               final mState = ref.read(membersNotifierProvider);
               final accent = Theme.of(context).colorScheme.primary;
               if (success) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/primary_button.dart';
 
@@ -9,6 +10,7 @@ class LoginForm extends StatefulWidget {
   final TextEditingController passwordController;
   final bool isLoading;
   final VoidCallback onLogin;
+  final VoidCallback? onSignUp;
 
   const LoginForm({
     super.key,
@@ -17,6 +19,7 @@ class LoginForm extends StatefulWidget {
     required this.passwordController,
     required this.isLoading,
     required this.onLogin,
+    this.onSignUp,
   });
 
   @override
@@ -34,6 +37,8 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
         const SingleActivator(LogicalKeyboardKey.enter): _submitIfReady,
@@ -60,13 +65,8 @@ class _LoginFormState extends State<LoginForm> {
                   prefixIcon: Icon(Icons.email_outlined, color: AppColors.textSecondary),
                 ),
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Email is required';
-                  }
-                  final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[\w\-]+');
-                  if (!emailRegex.hasMatch(value.trim())) {
-                    return 'Enter a valid email address';
-                  }
+                  if (value == null || value.trim().isEmpty) return 'Email is required';
+                  if (!value.contains('@')) return 'Enter a valid email address';
                   return null;
                 },
               ),
@@ -88,12 +88,8 @@ class _LoginFormState extends State<LoginForm> {
                   ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password is required';
-                  }
-                  if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
-                  }
+                  if (value == null || value.isEmpty) return 'Password is required';
+                  if (value.length < 6) return 'Password must be at least 6 characters';
                   return null;
                 },
               ),
@@ -104,6 +100,19 @@ class _LoginFormState extends State<LoginForm> {
                 isLoading: widget.isLoading,
                 onPressed: widget.isLoading ? null : widget.onLogin,
               ),
+              if (widget.onSignUp != null) ...[
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('New member? ', style: GoogleFonts.inter(fontSize: 12.5, color: AppColors.textSecondary)),
+                    InkWell(
+                      onTap: widget.onSignUp,
+                      child: Text('Create Account', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: accent)),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

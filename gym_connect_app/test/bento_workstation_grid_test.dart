@@ -5,7 +5,6 @@ import 'package:gym_connect_app/features/auth/domain/models/user_profile.dart';
 import 'package:gym_connect_app/features/auth/domain/models/user_role.dart';
 import 'package:gym_connect_app/features/dashboard/data/owner_dashboard_repository.dart';
 import 'package:gym_connect_app/features/dashboard/domain/models/owner_dashboard_metrics.dart';
-import 'package:gym_connect_app/features/members/data/members_repository.dart';
 import 'package:gym_connect_app/features/members/domain/models/gym_member.dart';
 import 'package:gym_connect_app/features/members/presentation/providers/members_provider.dart';
 import 'package:gym_connect_app/features/payments/domain/models/payment_submission.dart';
@@ -238,8 +237,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('PICKUP: PK-9912'), findsOneWidget);
-      expect(find.textContaining('Zain Malik'), findsOneWidget);
+      expect(find.text('PK-9912'), findsOneWidget);
+      expect(find.textContaining('ZAIN MALIK'), findsOneWidget);
       expect(find.text('PKR 18500'), findsOneWidget);
       expect(find.text('DISPATCH ORDER'), findsOneWidget);
     });
@@ -263,7 +262,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('CATALOG: 2 PRODUCTS'), findsOneWidget);
+      expect(find.text('2 PRODUCTS'), findsOneWidget);
       expect(find.text('ADD PRODUCT'), findsOneWidget);
       expect(find.text('Optimum Nutrition Gold Whey'), findsOneWidget);
       expect(find.text('24 IN STOCK'), findsOneWidget);
@@ -290,9 +289,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('HAMZA ALI'), findsOneWidget);
-      expect(find.text('TRANSFER: PKR 4500'), findsOneWidget);
+      expect(find.text('PKR 4500'), findsOneWidget);
       expect(find.text('REJECT'), findsOneWidget);
-      expect(find.textContaining('APPROVE & ACTIVATE'), findsOneWidget);
+      expect(find.text('APPROVE'), findsOneWidget);
     });
 
     testWidgets('MiniCalculatorsHubPreview renders clinical BMR/TDEE & 1RM telemetry', (tester) async {
@@ -364,16 +363,28 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify all 6 Bento Workstations exist
-      expect(find.text('MEMBERS DIRECTORY & EXCEL INGESTION [DESKTOP]'), findsOneWidget);
-      expect(find.text('WORKOUT PROTOCOL STUDIO [DESKTOP]'), findsOneWidget);
+      // 1. Verify Option 3 (Enterprise Mode) displays by default
+      expect(find.text('MEMBERS DIRECTORY & EXCEL INGESTION'), findsOneWidget);
+      expect(find.text('WORKOUT PROTOCOL STUDIO'), findsOneWidget);
       expect(find.text('STORE ORDERS & DISPATCH'), findsOneWidget);
       expect(find.text('PRO SHOP & INVENTORY MANAGER'), findsOneWidget);
       expect(find.text('PENDING PROOF-OF-PAYMENTS'), findsOneWidget);
       expect(find.text('CLINICAL TOOLS & CALCULATORS'), findsOneWidget);
-
-      // Verify Bento Live telemetry indicators are rendered
       expect(find.text('LIVE WORKSTATION'), findsNWidgets(6));
+
+      // 2. Switch to Option 1 (Bento Preview Mode)
+      await tester.tap(find.text('BENTO PREVIEW'));
+      await tester.pumpAndSettle();
+
+      // Verify Bento Preview Cards are now active
+      expect(find.text('MEMBERS DIRECTORY & EXCEL INGESTION [DESKTOP]'), findsOneWidget);
+      expect(find.text('WORKOUT PROTOCOL STUDIO [DESKTOP]'), findsOneWidget);
+      expect(find.text('LIVE WORKSTATION'), findsNWidgets(6));
+
+      // 3. Switch back to Option 3 (Enterprise Mode)
+      await tester.tap(find.text('ENTERPRISE'));
+      await tester.pumpAndSettle();
+      expect(find.text('MEMBERS DIRECTORY & EXCEL INGESTION'), findsOneWidget);
     });
   });
 }

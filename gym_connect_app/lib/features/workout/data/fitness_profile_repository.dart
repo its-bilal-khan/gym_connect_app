@@ -100,10 +100,18 @@ class FitnessProfileRepository {
           'body_type': profile.bodyType,
           'fitness_goal': profile.fitnessGoal,
           'experience_level': profile.experienceLevel,
+          if (profile.age != null) 'age': profile.age,
           if (profile.heightCm != null) 'height_cm': profile.heightCm,
           if (profile.currentWeightKg != null) 'current_weight_kg': profile.currentWeightKg,
           if (profile.targetWeightKg != null) 'target_weight_kg': profile.targetWeightKg,
           'preferred_days_per_week': profile.preferredDaysPerWeek,
+          'assigned_workout_track': profile.assignedWorkoutTrack,
+          'current_step_target': profile.currentStepTarget,
+          'consecutive_target_misses': profile.consecutiveTargetMisses,
+          'medical_injuries': profile.medicalInjuries,
+          if (profile.currentWorkoutRoutineId != null)
+            'current_workout_routine_id': profile.currentWorkoutRoutineId,
+          'profile_completed': profile.profileCompleted,
           'updated_at': DateTime.now().toIso8601String(),
         });
 

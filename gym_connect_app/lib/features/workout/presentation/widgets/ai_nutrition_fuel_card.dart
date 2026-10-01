@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'calorie_calculator_sheet.dart';
+import 'diet_meal_swap_sheet.dart';
 
 class AiNutritionFuelCard extends StatelessWidget {
   final int targetCalories;
@@ -57,6 +58,22 @@ class AiNutritionFuelCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                InkWell(
+                  onTap: () => DietMealSwapSheet.show(context),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.swap_horiz_rounded, size: 12, color: Colors.greenAccent),
+                        const SizedBox(width: 3),
+                        Text('SWAP', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(6)),

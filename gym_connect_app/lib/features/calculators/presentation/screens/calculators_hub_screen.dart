@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../widgets/calorie_calculator_screen.dart';
 import '../widgets/macro_calculator_screen.dart';
+import '../widgets/google_bmi_calculator_screen.dart';
 
 /// Hub screen showing available calculators as premium cards.
 class CalculatorsHubScreen extends StatelessWidget {
@@ -40,11 +41,18 @@ class CalculatorsHubScreen extends StatelessWidget {
             ],
             onTap: () => _openCalculator(context, const MacroCalculatorScreen()),
           ),
-          _buildComingSoonCard(
+          _buildCalculatorCard(
+            context,
             title: 'BMI CALCULATOR',
-            subtitle: 'Body Mass Index analysis with health category breakdown',
+            subtitle:
+                'Body Mass Index analysis with Google-style precision speedometer and health categories',
             icon: Icons.monitor_weight_rounded,
             iconColor: Colors.cyanAccent,
+            gradientColors: [
+              Colors.cyanAccent.withValues(alpha: 0.15),
+              Colors.tealAccent.withValues(alpha: 0.05),
+            ],
+            onTap: () => _openCalculator(context, const GoogleBmiCalculatorScreen()),
           ),
           _buildComingSoonCard(
             title: '1RM CALCULATOR',

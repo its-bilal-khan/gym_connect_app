@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/domain/models/user_profile.dart';
+import '../../../calculators/presentation/screens/calculators_hub_screen.dart';
 import 'widgets/owner_overview_tab.dart';
 import 'widgets/owner_settings_tab.dart';
 import 'widgets/owner_staff_audit_tab.dart';
@@ -30,6 +31,9 @@ class OwnerShellView extends StatelessWidget {
         content = OwnerOperationsTab(profile: profile);
         break;
       case 3:
+        content = const CalculatorsHubScreen();
+        break;
+      case 4:
       default:
         content = OwnerSettingsTab(profile: profile);
         break;

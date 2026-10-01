@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import 'providers/auth_notifier.dart';
 import 'providers/auth_state.dart';
+import 'signup_screen.dart';
 import 'widgets/login_form.dart';
 import 'widgets/login_header.dart';
 
@@ -85,6 +86,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     passwordController: _passwordController,
                     isLoading: isLoading,
                     onLogin: _handleLogin,
+                    onSignUp: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SignupScreen()),
+                    ),
                   ),
                 ],
               ),

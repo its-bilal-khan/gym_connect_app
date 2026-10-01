@@ -12,8 +12,7 @@ class CalorieCalculatorScreen extends StatefulWidget {
       _CalorieCalculatorScreenState();
 }
 
-class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
-    with SingleTickerProviderStateMixin {
+class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
   Gender _gender = Gender.male;
   UnitSystem _unitSystem = UnitSystem.metric;
   ActivityLevel _activityLevel = ActivityLevel.moderatelyActive;
@@ -29,33 +28,18 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
   int _heightInches = 9;
 
   CalorieResult? _result;
-  late AnimationController _animController;
-  late Animation<double> _gaugeAnim;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-    _gaugeAnim = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
-    );
     _calculate();
   }
 
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
-
   void _calculate() {
-    double wKg = _unitSystem == UnitSystem.metric
+    final double wKg = _unitSystem == UnitSystem.metric
         ? _weightKg
         : CalorieCalculatorEngine.lbsToKg(_weightLbs);
-    double hCm = _unitSystem == UnitSystem.metric
+    final double hCm = _unitSystem == UnitSystem.metric
         ? _heightCm
         : CalorieCalculatorEngine.feetInchesToCm(_heightFeet, _heightInches);
 
@@ -72,7 +56,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
     setState(() {
       _result = CalorieCalculatorEngine.calculate(input);
     });
-    _animController.forward(from: 0);
   }
 
   @override
@@ -169,30 +152,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
         _buildActivityDropdown(),
         const SizedBox(height: 14),
         _buildGoalSelector(),
-        const SizedBox(height: 18),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _calculate,
-            icon: const Icon(Icons.calculate_rounded, size: 20),
-            label: Text(
-              'CALCULATE',
-              style: GoogleFonts.oswald(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.0,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -205,14 +164,20 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
             label: 'Male',
             icon: Icons.male_rounded,
             selected: _gender == Gender.male,
-            onTap: () => setState(() => _gender = Gender.male),
+            onTap: () {
+              setState(() => _gender = Gender.male);
+              _calculate();
+            },
           ),
           const SizedBox(width: 10),
           _segmentBtn(
             label: 'Female',
             icon: Icons.female_rounded,
             selected: _gender == Gender.female,
-            onTap: () => setState(() => _gender = Gender.female),
+            onTap: () {
+              setState(() => _gender = Gender.female);
+              _calculate();
+            },
           ),
         ],
       ),
@@ -226,13 +191,33 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
           _segmentBtn(
             label: 'Metric (kg/cm)',
             selected: _unitSystem == UnitSystem.metric,
-            onTap: () => setState(() => _unitSystem = UnitSystem.metric),
+            onTap: () {
+              if (_unitSystem != UnitSystem.metric) {
+                setState(() {
+                  _unitSystem = UnitSystem.metric;
+                  _weightKg = CalorieCalculatorEngine.lbsToKg(_weightLbs).roundToDouble().clamp(30.0, 200.0);
+                  _heightCm = CalorieCalculatorEngine.feetInchesToCm(_heightFeet, _heightInches).clamp(120.0, 220.0);
+                });
+                _calculate();
+              }
+            },
           ),
           const SizedBox(width: 10),
           _segmentBtn(
             label: 'Imperial (lbs/ft)',
             selected: _unitSystem == UnitSystem.imperial,
-            onTap: () => setState(() => _unitSystem = UnitSystem.imperial),
+            onTap: () {
+              if (_unitSystem != UnitSystem.imperial) {
+                setState(() {
+                  _unitSystem = UnitSystem.imperial;
+                  _weightLbs = CalorieCalculatorEngine.kgToLbs(_weightKg).roundToDouble().clamp(66.0, 440.0);
+                  final (ft, inch) = CalorieCalculatorEngine.cmToFeetInches(_heightCm);
+                  _heightFeet = ft.clamp(4, 7);
+                  _heightInches = inch.clamp(0, 11);
+                });
+                _calculate();
+              }
+            },
           ),
         ],
       ),
@@ -273,7 +258,10 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
               min: 14,
               max: 80,
               divisions: 66,
-              onChanged: (v) => setState(() => _age = v.round()),
+              onChanged: (v) {
+                setState(() => _age = v.round());
+                _calculate();
+              },
             ),
           ),
         ],
@@ -325,10 +313,13 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
                 setState(() {
                   if (isMetric) {
                     _weightKg = v;
+                    _weightLbs = CalorieCalculatorEngine.kgToLbs(v).roundToDouble().clamp(66.0, 440.0);
                   } else {
                     _weightLbs = v;
+                    _weightKg = CalorieCalculatorEngine.lbsToKg(v).roundToDouble().clamp(30.0, 200.0);
                   }
                 });
+                _calculate();
               },
             ),
           ),
@@ -379,8 +370,13 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
                           min: 4,
                           max: 7,
                           divisions: 3,
-                          onChanged: (v) =>
-                              setState(() => _heightFeet = v.round()),
+                          onChanged: (v) {
+                            setState(() {
+                              _heightFeet = v.round();
+                              _heightCm = CalorieCalculatorEngine.feetInchesToCm(_heightFeet, _heightInches).clamp(120.0, 220.0);
+                            });
+                            _calculate();
+                          },
                         ),
                       ),
                     ],
@@ -398,8 +394,13 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
                           min: 0,
                           max: 11,
                           divisions: 11,
-                          onChanged: (v) =>
-                              setState(() => _heightInches = v.round()),
+                          onChanged: (v) {
+                            setState(() {
+                              _heightInches = v.round();
+                              _heightCm = CalorieCalculatorEngine.feetInchesToCm(_heightFeet, _heightInches).clamp(120.0, 220.0);
+                            });
+                            _calculate();
+                          },
                         ),
                       ),
                     ],
@@ -445,7 +446,15 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
               min: 120,
               max: 220,
               divisions: 100,
-              onChanged: (v) => setState(() => _heightCm = v),
+              onChanged: (v) {
+                setState(() {
+                  _heightCm = v;
+                  final (f, i) = CalorieCalculatorEngine.cmToFeetInches(v);
+                  _heightFeet = f.clamp(4, 7);
+                  _heightInches = i.clamp(0, 11);
+                });
+                _calculate();
+              },
             ),
           ),
         ],
@@ -466,7 +475,10 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
             return Padding(
               padding: const EdgeInsets.only(bottom: 6),
               child: InkWell(
-                onTap: () => setState(() => _activityLevel = level),
+                onTap: () {
+                  setState(() => _activityLevel = level);
+                  _calculate();
+                },
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -552,7 +564,10 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
                   padding: EdgeInsets.only(
                       right: g != CalorieGoal.gain ? 8 : 0),
                   child: InkWell(
-                    onTap: () => setState(() => _goal = g),
+                    onTap: () {
+                      setState(() => _goal = g);
+                      _calculate();
+                    },
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -625,24 +640,29 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen>
             ),
           ),
           const SizedBox(height: 16),
-          AnimatedBuilder(
-            animation: _gaugeAnim,
-            builder: (context, _) {
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(
+              begin: res.targetCalories.toDouble(),
+              end: res.targetCalories.toDouble(),
+            ),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            builder: (context, animValue, _) {
               return SizedBox(
                 width: 220,
                 height: 220,
                 child: CustomPaint(
                   painter: _CalorieGaugePainter(
-                    value: (res.targetCalories * _gaugeAnim.value).round(),
+                    value: animValue.round(),
                     maxValue: 5000,
-                    progress: _gaugeAnim.value,
+                    progress: 1.0,
                   ),
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '${(res.targetCalories * _gaugeAnim.value).round()}',
+                          '${animValue.round()}',
                           style: GoogleFonts.oswald(
                             fontSize: 48,
                             fontWeight: FontWeight.bold,

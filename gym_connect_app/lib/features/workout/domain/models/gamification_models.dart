@@ -1,3 +1,6 @@
+export '../../../gamification/domain/models/models.dart';
+import '../../../gamification/domain/models/leaderboard_member.dart';
+
 class MemberGamificationData {
   final String userId;
   final int currentStreakDays;
@@ -51,4 +54,15 @@ class LeaderboardEntry {
     required this.rank,
     this.isCurrentUser = false,
   });
+
+  factory LeaderboardEntry.fromMember(LeaderboardMember member) {
+    return LeaderboardEntry(
+      id: member.userId,
+      name: member.fullName,
+      streakDays: member.currentStreakDays,
+      totalPoints: member.monthlyPoints > 0 ? member.monthlyPoints : member.totalPoints,
+      rank: member.rank,
+      isCurrentUser: member.isCurrentUser,
+    );
+  }
 }

@@ -5,6 +5,8 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../auth/domain/models/user_role.dart';
 import '../../../../auth/presentation/providers/auth_notifier.dart';
 import '../../providers/tenant_providers.dart';
+import '../../widgets/super_admin_feature_flags_sheet.dart';
+import 'rule9_feature_toggles_banner.dart';
 
 class GodModeAuditTab extends ConsumerWidget {
   const GodModeAuditTab({super.key});
@@ -53,6 +55,8 @@ class GodModeAuditTab extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 20),
+          const Rule9FeatureTogglesBanner(),
           const SizedBox(height: 24),
           Text(
             'QUICK SWITCH / SIMULATE AS GYM OWNER',
@@ -112,6 +116,11 @@ class GodModeAuditTab extends ConsumerWidget {
                           ),
                         ],
                       ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.tune_rounded, color: Colors.amberAccent, size: 18),
+                      tooltip: 'Tenant Feature Toggles (Rule 9)',
+                      onPressed: () => SuperAdminFeatureFlagsSheet.show(context, tenantId: t.id),
                     ),
                     IconButton(
                       icon: Icon(Icons.login_rounded, color: AppColors.primary, size: 18),

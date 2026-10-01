@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gym_connect_app/features/workout/domain/models/gamification_models.dart';
 import 'package:gym_connect_app/features/workout/presentation/providers/gamification_provider.dart';
 import 'package:gym_connect_app/features/workout/presentation/widgets/ai_nutrition_fuel_card.dart';
 import 'package:gym_connect_app/features/workout/presentation/widgets/calorie_calculator_sheet.dart';
@@ -25,14 +26,12 @@ void main() {
       expect(updated.totalPoints, initial.totalPoints + 100);
     });
 
-    test('LeaderboardProvider fetches ranked entries', () async {
+    test('LeaderboardProvider returns empty list when no database rows exist (Strict Rule 1)', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       final entries = await container.read(leaderboardProvider.future);
-      expect(entries.isNotEmpty, isTrue);
-      expect(entries.first.rank, 1);
-      expect(entries.first.name, 'Zaid Khan');
+      expect(entries, isEmpty);
     });
   });
 
@@ -140,7 +139,7 @@ void main() {
   });
 
   group('Leaderboard & Confetti Celebration Tests', () {
-    testWidgets('GymLeaderboardSheet renders rankings and user stats', (tester) async {
+    testWidgets('GymLeaderboardSheet renders empty state when database is clean', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -154,9 +153,41 @@ void main() {
       await tester.pump();
 
       expect(find.text('GYM LEADERBOARD'), findsOneWidget);
+      expect(find.text('NO WORKOUTS LOGGED THIS MONTH'), findsOneWidget);
+      expect(find.textContaining('YOUR STREAK:'), findsOneWidget);
+    });
+
+    testWidgets('GymLeaderboardSheet renders rankings and user stats with populated data', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            leaderboardProvider.overrideWith(
+              (ref) => Future.value([
+                const LeaderboardEntry(
+                  id: 'user-1',
+                  name: 'Zaid Khan',
+                  streakDays: 14,
+                  totalPoints: 1250,
+                  rank: 1,
+                  isCurrentUser: true,
+                ),
+              ]),
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: GymLeaderboardSheet(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.text('GYM LEADERBOARD'), findsOneWidget);
       expect(find.text('#1'), findsOneWidget);
       expect(find.text('Zaid Khan'), findsOneWidget);
-      expect(find.textContaining('YOUR STREAK:'), findsOneWidget);
+      expect(find.textContaining('1250 XP'), findsWidgets);
     });
 
     testWidgets('ConfettiCelebrationDialog renders metrics and handles return', (tester) async {

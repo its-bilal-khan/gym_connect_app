@@ -258,6 +258,10 @@ class WorkoutRoutine {
   final String description;
   final String targetGoal;
   final int durationDays;
+  final String assignedTrack; // 'track_a' or 'track_b'
+  final String? userId;
+  final bool isAiGenerated;
+  final String? bodyType;
 
   const WorkoutRoutine({
     required this.id,
@@ -265,7 +269,137 @@ class WorkoutRoutine {
     required this.description,
     required this.targetGoal,
     this.durationDays = 90,
+    this.assignedTrack = 'track_a',
+    this.userId,
+    this.isAiGenerated = false,
+    this.bodyType = 'mesomorph',
   });
+
+  bool get isTrackB => assignedTrack.toLowerCase() == 'track_b';
+
+  factory WorkoutRoutine.fromJson(Map<String, dynamic> json) {
+    return WorkoutRoutine(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? 'Custom Workout Routine',
+      description: json['description'] as String? ?? '',
+      targetGoal: json['target_goal'] as String? ?? 'general_fitness',
+      durationDays: (json['duration_days'] as num?)?.toInt() ?? 90,
+      assignedTrack: json['assigned_track'] as String? ?? 'track_a',
+      userId: json['user_id'] as String?,
+      isAiGenerated: (json['is_ai_generated'] as bool?) ?? false,
+      bodyType: json['body_type'] as String? ?? 'mesomorph',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'target_goal': targetGoal,
+      'duration_days': durationDays,
+      'assigned_track': assignedTrack,
+      'user_id': userId,
+      'is_ai_generated': isAiGenerated,
+      'body_type': bodyType,
+    };
+  }
+}
+
+class AiWorkoutGenerationResult {
+  final bool success;
+  final double bmi;
+  final String assignedTrack; // 'track_a' or 'track_b'
+  final String routingReason;
+  final String routineId;
+  final String? masterTemplateId;
+  final int daysGenerated;
+  final int exercisesMapped;
+  final int swappedExercisesCount;
+  final String routineTitle;
+  final String? error;
+
+  const AiWorkoutGenerationResult({
+    required this.success,
+    this.bmi = 23.0,
+    this.assignedTrack = 'track_a',
+    this.routingReason = '',
+    required this.routineId,
+    this.masterTemplateId,
+    this.daysGenerated = 0,
+    this.exercisesMapped = 0,
+    this.swappedExercisesCount = 0,
+    required this.routineTitle,
+    this.error,
+  });
+
+  bool get isTrackB => assignedTrack.toLowerCase() == 'track_b';
+
+  factory AiWorkoutGenerationResult.fromJson(Map<String, dynamic> json) {
+    return AiWorkoutGenerationResult(
+      success: (json['success'] as bool?) ?? true,
+      bmi: (json['bmi'] as num?)?.toDouble() ?? 23.0,
+      assignedTrack: json['assigned_track'] as String? ?? 'track_a',
+      routingReason: json['routing_reason'] as String? ?? '',
+      routineId: json['routine_id'] as String? ?? '',
+      masterTemplateId: json['master_template_id'] as String?,
+      daysGenerated: (json['days_generated'] as num?)?.toInt() ?? (json['days_assigned'] as num?)?.toInt() ?? 0,
+      exercisesMapped: (json['exercises_mapped'] as num?)?.toInt() ?? 0,
+      swappedExercisesCount: (json['swapped_exercises_count'] as num?)?.toInt() ?? 0,
+      routineTitle: json['routine_title'] as String? ?? '90-Day Master Routine',
+      error: json['error'] as String?,
+    );
+  }
+
+  factory AiWorkoutGenerationResult.failure(String message) {
+    return AiWorkoutGenerationResult(
+      success: false,
+      routineId: '',
+      routineTitle: '',
+      error: message,
+    );
+  }
+}
+
+class ExerciseSwapCandidate {
+  final String exerciseId;
+  final String name;
+  final String targetMuscle;
+  final String equipment;
+  final String difficulty;
+  final String? swapGroupId;
+  final String? mlPoseExerciseType;
+  final String? videoUrl;
+  final String? sideVideoUrl;
+  final String? thumbnailUrl;
+
+  const ExerciseSwapCandidate({
+    required this.exerciseId,
+    required this.name,
+    required this.targetMuscle,
+    required this.equipment,
+    this.difficulty = 'Intermediate',
+    this.swapGroupId,
+    this.mlPoseExerciseType,
+    this.videoUrl,
+    this.sideVideoUrl,
+    this.thumbnailUrl,
+  });
+
+  factory ExerciseSwapCandidate.fromJson(Map<String, dynamic> json) {
+    return ExerciseSwapCandidate(
+      exerciseId: json['id'] as String? ?? json['exercise_id'] as String? ?? '',
+      name: json['name'] as String? ?? 'Alternative Exercise',
+      targetMuscle: json['target_muscle'] as String? ?? 'Full Body',
+      equipment: json['equipment'] as String? ?? 'Bodyweight',
+      difficulty: json['difficulty'] as String? ?? 'Intermediate',
+      swapGroupId: json['swap_group_id'] as String?,
+      mlPoseExerciseType: json['ml_pose_exercise_type'] as String?,
+      videoUrl: json['video_url'] as String?,
+      sideVideoUrl: json['side_video_url'] as String?,
+      thumbnailUrl: json['thumbnail_url'] as String?,
+    );
+  }
 }
 
 class WorkoutSetRecord {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../auth/domain/models/user_profile.dart';
+import '../../../calculators/presentation/screens/calculators_hub_screen.dart';
 import 'widgets/staff_members_directory_tab.dart';
 import 'widgets/staff_pos_khata_tab.dart';
 import 'widgets/staff_reception_tab.dart';
@@ -25,8 +26,10 @@ class StaffShellView extends StatelessWidget {
       case 2:
         return const StaffPosKhataTab();
       case 3:
-      default:
         return const StaffShiftTallyTab();
+      case 4:
+      default:
+        return const CalculatorsHubScreen();
     }
   }
 }

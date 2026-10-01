@@ -6,7 +6,7 @@ import '../../../../shared/widgets/scaled_live_preview.dart';
 import '../../../auth/domain/models/user_profile.dart';
 import '../../../auth/domain/models/user_role.dart';
 import '../../../calculators/presentation/screens/calculators_hub_screen.dart';
-import '../../../shells/owner/presentation/desktop/desktop_owner_portal_view.dart';
+import 'sidebar_owner_overview_mini_preview.dart';
 import '../../../shells/owner/presentation/widgets/owner_operations_tab.dart';
 import '../../../shells/owner/presentation/widgets/owner_settings_tab.dart';
 import '../../../shells/owner/presentation/widgets/owner_staff_audit_tab.dart';
@@ -35,11 +35,8 @@ Widget? resolveMiniPreviewForNavId({
   if (role == UserRole.owner) {
     switch (navId) {
       case 'overview':
-        // Exactly matches Screenshot 5: Executive Workstations & Controls
-        return ScaledLivePreview(
-          virtualWidth: 1100,
-          virtualHeight: 580,
-          child: DesktopOwnerPortalView(profile: effectiveProfile),
+        return SidebarOwnerOverviewMiniPreview(
+          tenantId: effectiveProfile.tenantId ?? '',
         );
       case 'pos_staff':
         // Exactly matches Screenshot 4: Staff Oversight & Audit Watchdog
