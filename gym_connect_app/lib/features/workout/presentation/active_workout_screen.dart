@@ -55,6 +55,10 @@ class ActiveWorkoutScreen extends ConsumerWidget {
                   WorkoutMediaViewport(
                     exercise: currentExercise.exercise,
                     targetReps: int.tryParse(currentExercise.targetRepsRange.split('-').last.trim()) ?? 12,
+                    currentSet: sets.indexWhere((s) => !s.isCompleted) != -1
+                        ? sets.indexWhere((s) => !s.isCompleted) + 1
+                        : (sets.isNotEmpty ? sets.length : 1),
+                    totalSets: sets.isNotEmpty ? sets.length : 3,
                     onRepCountChanged: (reps) {
                       final activeSetIdx = sets.indexWhere((s) => !s.isCompleted);
                       if (activeSetIdx != -1) {

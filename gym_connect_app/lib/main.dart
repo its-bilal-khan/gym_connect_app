@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,20 +11,37 @@ import 'features/auth/presentation/auth_gate.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Catch synchronous Flutter framework errors
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('Flutter uncaught error: ${details.exceptionAsString()}');
+  };
+
+  // Catch asynchronous platform errors to prevent fatal process crash
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Async platform error: $error\n$stack');
+    return true;
+  };
+
+  String supabaseUrl = 'https://vtvexencluhysmkqyhln.supabase.co';
+  String supabaseAnonKey = 'sb_publishable_7U6YdA-3cgaR5YTH9hKLdw_2zVUxTqw';
+
   try {
     await dotenv.load(fileName: '.env');
-    final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
-    final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+    final envUrl = dotenv.env['SUPABASE_URL'];
+    final envKey = dotenv.env['SUPABASE_ANON_KEY'];
+    if (envUrl != null && envUrl.trim().isNotEmpty) supabaseUrl = envUrl.trim();
+    if (envKey != null && envKey.trim().isNotEmpty) supabaseAnonKey = envKey.trim();
+  } catch (error) {
+    debugPrint('Notice: .env loaded fallback credentials: $error');
+  }
 
-    if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
-      await Supabase.initialize(
-        url: supabaseUrl,
-        // ignore: deprecated_member_use
-        anonKey: supabaseAnonKey,
-      );
-    } else {
-      debugPrint('Warning: SUPABASE_URL or SUPABASE_ANON_KEY not configured in .env');
-    }
+  try {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      // ignore: deprecated_member_use
+      anonKey: supabaseAnonKey,
+    );
   } catch (error, stackTrace) {
     debugPrint('Error initializing Supabase: $error\n$stackTrace');
   }

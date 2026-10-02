@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/gamification_provider.dart';
 import '../providers/workout_notifier.dart';
+import '../screens/workout_completion_share_screen.dart';
 import 'confetti_celebration_dialog.dart';
 
 class WorkoutFinishDialog {
@@ -29,22 +30,39 @@ class WorkoutFinishDialog {
               final session = ref.read(workoutNotifierProvider);
               int totalSets = 0;
               double totalVol = 0;
+              int totalReps = 0;
               for (final sets in session.setsByExercise.values) {
                 for (final s in sets.where((item) => item.isCompleted)) {
                   totalSets++;
+                  totalReps += s.actualReps;
                   totalVol += (s.weightKg * s.actualReps);
                 }
               }
               ref.read(workoutNotifierProvider.notifier).finishWorkout();
               ref.read(gamificationProvider.notifier).awardWorkoutCompletionPoints(points: 100);
 
-              ConfettiCelebrationDialog.show(
-                context,
-                totalSets: totalSets > 0 ? totalSets : 12,
-                totalVolumeKg: totalVol > 0 ? totalVol : 2850.0,
-                durationMinutes: 45,
-                onClose: () => Navigator.of(context).pop(),
-              );
+              final recordedClip = session.recordedMicroClipPath;
+              if (recordedClip != null && recordedClip.isNotEmpty) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => WorkoutCompletionShareScreen(
+                      videoPath: recordedClip,
+                      routineTitle: session.routineDay?.title ?? 'Workout Session',
+                      totalSets: totalSets > 0 ? totalSets : 12,
+                      totalReps: totalReps > 0 ? totalReps : 96,
+                      durationMinutes: 45,
+                    ),
+                  ),
+                );
+              } else {
+                ConfettiCelebrationDialog.show(
+                  context,
+                  totalSets: totalSets > 0 ? totalSets : 12,
+                  totalVolumeKg: totalVol > 0 ? totalVol : 2850.0,
+                  durationMinutes: 45,
+                  onClose: () => Navigator.of(context).pop(),
+                );
+              }
             },
             child: const Text('COMPLETE'),
           ),

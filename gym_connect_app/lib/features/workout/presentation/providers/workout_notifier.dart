@@ -3,52 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/workout_repository.dart';
 import '../../domain/models/workout_models.dart';
 import 'rest_timer_notifier.dart';
-
-class WorkoutSessionState {
-  final WorkoutRoutineDay? routineDay;
-  final int activeExerciseIndex;
-  final Map<String, List<WorkoutSetRecord>> setsByExercise;
-  final bool isSessionActive;
-  final bool isCompleted;
-  final String activeBodyType;
-
-  const WorkoutSessionState({
-    this.routineDay,
-    this.activeExerciseIndex = 0,
-    this.setsByExercise = const {},
-    this.isSessionActive = false,
-    this.isCompleted = false,
-    this.activeBodyType = 'mesomorph',
-  });
-
-  double get progressPercentage {
-    int total = 0;
-    int done = 0;
-    for (final sets in setsByExercise.values) {
-      total += sets.length;
-      done += sets.where((s) => s.isCompleted).length;
-    }
-    return total > 0 ? (done / total) : 0.0;
-  }
-
-  WorkoutSessionState copyWith({
-    WorkoutRoutineDay? routineDay,
-    int? activeExerciseIndex,
-    Map<String, List<WorkoutSetRecord>>? setsByExercise,
-    bool? isSessionActive,
-    bool? isCompleted,
-    String? activeBodyType,
-  }) {
-    return WorkoutSessionState(
-      routineDay: routineDay ?? this.routineDay,
-      activeExerciseIndex: activeExerciseIndex ?? this.activeExerciseIndex,
-      setsByExercise: setsByExercise ?? this.setsByExercise,
-      isSessionActive: isSessionActive ?? this.isSessionActive,
-      isCompleted: isCompleted ?? this.isCompleted,
-      activeBodyType: activeBodyType ?? this.activeBodyType,
-    );
-  }
-}
+import 'workout_session_state.dart';
+export 'workout_session_state.dart';
 
 final workoutNotifierProvider = NotifierProvider<WorkoutNotifier, WorkoutSessionState>(WorkoutNotifier.new);
 
@@ -123,7 +79,7 @@ class WorkoutNotifier extends Notifier<WorkoutSessionState> {
     state = state.copyWith(setsByExercise: newMap);
 
     if (updatedCompleted) {
-      HapticFeedback.mediumImpact(); // Satisfying dopamine loop feedback
+      HapticFeedback.mediumImpact();
       final exercise = state.routineDay?.exercises.firstWhere((e) => e.id == exerciseDayId);
       ref.read(restTimerProvider.notifier).startTimer(seconds: exercise?.restSeconds ?? 60);
     }
@@ -147,6 +103,10 @@ class WorkoutNotifier extends Notifier<WorkoutSessionState> {
       newMap[exerciseDayId] = currentSets;
       state = state.copyWith(setsByExercise: newMap);
     }
+  }
+
+  void setRecordedMicroClipPath(String? path) {
+    state = state.copyWith(recordedMicroClipPath: path);
   }
 
   void finishWorkout() {

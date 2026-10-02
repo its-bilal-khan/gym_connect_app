@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-/// Intelligent voice coach utilizing Text-To-Speech with audio debouncing.
+/// Intelligent voice coach utilizing Text-To-Speech with responsive audio debouncing.
 class TtsVoiceCoachService {
   final FlutterTts _tts;
   final Future<dynamic> Function(String)? customSpeak;
@@ -32,6 +32,7 @@ class TtsVoiceCoachService {
       await _tts.setSpeechRate(0.52);
       await _tts.setVolume(1.0);
       await _tts.setPitch(1.0);
+      await _tts.awaitSpeakCompletion(true);
       _isInitialized = true;
     } on MissingPluginException {
       _isInitialized = true;
@@ -40,20 +41,21 @@ class TtsVoiceCoachService {
     }
   }
 
-  /// Speaks [phrase] with debouncing to prevent audio spam.
+  /// Speaks [phrase] with debouncing. If [force] is true, bypasses cooldown to provide immediate feedback.
   Future<bool> speak(
     String phrase, {
     Duration? cooldown,
+    bool force = false,
   }) async {
     final now = DateTime.now();
     final effectiveCooldown = cooldown ?? Duration(milliseconds: (ttsCooldownSeconds * 1000).toInt());
 
-    // Debounce check: prevent speaking too frequently
-    if (_lastSpokenAt != null) {
+    // Debounce check: bypass if force is true (missed rep, completed rep, or urgent cue)
+    if (!force && _lastSpokenAt != null) {
       final elapsed = now.difference(_lastSpokenAt!);
       final requiredCooldown = (_lastPhrase == phrase)
-          ? effectiveCooldown + const Duration(milliseconds: 1000)
-          : effectiveCooldown;
+          ? effectiveCooldown
+          : const Duration(milliseconds: 1000);
       if (elapsed < requiredCooldown) {
         return false;
       }
@@ -63,6 +65,9 @@ class TtsVoiceCoachService {
     _lastPhrase = phrase;
 
     try {
+      if (force) {
+        try { await _tts.stop(); } catch (_) {}
+      }
       final handler = customSpeak;
       if (handler != null) {
         await handler(phrase);
@@ -71,7 +76,6 @@ class TtsVoiceCoachService {
       }
       return true;
     } on MissingPluginException {
-      // In headless unit test environments, native method channels are absent.
       return true;
     } catch (e) {
       debugPrint('TtsVoiceCoachService speak error: $e');

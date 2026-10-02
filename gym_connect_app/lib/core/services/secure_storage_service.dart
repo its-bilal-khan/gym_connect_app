@@ -9,6 +9,7 @@ import 'secure_storage_stub.dart'
 final secureStorageProvider = Provider<SecureStorageService>((ref) {
   return const SecureStorageService(
     FlutterSecureStorage(
+      aOptions: AndroidOptions(resetOnError: true),
       webOptions: WebOptions(
         dbName: 'GymConnectDb',
         publicKey: 'GymConnectAppKey',
@@ -23,6 +24,7 @@ class SecureStorageService {
   const SecureStorageService([FlutterSecureStorage? storage])
       : _storage = storage ??
             const FlutterSecureStorage(
+              aOptions: AndroidOptions(resetOnError: true),
               webOptions: WebOptions(
                 dbName: 'GymConnectDb',
                 publicKey: 'GymConnectAppKey',

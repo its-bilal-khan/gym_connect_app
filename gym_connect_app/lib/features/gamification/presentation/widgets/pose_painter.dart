@@ -4,6 +4,7 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 class PosePainter extends CustomPainter {
   final Pose? pose;
   final Size? imageSize;
+  final InputImageRotation rotation;
   final bool isBadPosture;
   final Color correctColor;
   final Color wrongColor;
@@ -12,6 +13,7 @@ class PosePainter extends CustomPainter {
   const PosePainter({
     required this.pose,
     this.imageSize,
+    this.rotation = InputImageRotation.rotation90deg,
     this.isBadPosture = false,
     this.correctColor = const Color(0xFFCCFF00),
     this.wrongColor = Colors.redAccent,
@@ -41,16 +43,30 @@ class PosePainter extends CustomPainter {
 
     Offset? getOffset(PoseLandmarkType type) {
       final landmark = pose!.landmarks[type];
-      if (landmark == null || landmark.likelihood < 0.45) return null;
+      if (landmark == null || landmark.likelihood < 0.35) return null;
 
       double x = landmark.x;
       double y = landmark.y;
 
       if (imageSize != null && imageSize!.width > 0 && imageSize!.height > 0) {
-        final scaleX = size.width / imageSize!.width;
-        final scaleY = size.height / imageSize!.height;
-        x = isFrontCamera ? size.width - (x * scaleX) : (x * scaleX);
-        y = y * scaleY;
+        switch (rotation) {
+          case InputImageRotation.rotation90deg:
+            x = landmark.x * size.width / imageSize!.height;
+            y = landmark.y * size.height / imageSize!.width;
+            break;
+          case InputImageRotation.rotation270deg:
+            x = size.width - (landmark.x * size.width / imageSize!.height);
+            y = size.height - (landmark.y * size.height / imageSize!.width);
+            break;
+          default:
+            x = landmark.x * size.width / imageSize!.width;
+            y = landmark.y * size.height / imageSize!.height;
+            break;
+        }
+
+        if (isFrontCamera) {
+          x = size.width - x;
+        }
       }
       return Offset(x, y);
     }
@@ -111,6 +127,7 @@ class PosePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant PosePainter oldDelegate) {
     return oldDelegate.pose != pose ||
+        oldDelegate.rotation != rotation ||
         oldDelegate.isBadPosture != isBadPosture ||
         oldDelegate.correctColor != correctColor ||
         oldDelegate.wrongColor != wrongColor;

@@ -157,13 +157,14 @@ void main() {
         ),
       );
 
-      expect(find.text('AI TRAINER LIVE'), findsOneWidget);
+      expect(find.textContaining('LIVE AI'), findsOneWidget);
       expect(find.text('DEEP SQUAT'), findsOneWidget);
-      expect(find.text('ANGLE: 85°  •  REPS: 7 / 12'), findsOneWidget);
-      expect(find.text('STOP'), findsOneWidget);
+      expect(find.text('7 / 12'), findsOneWidget);
+      expect(find.textContaining('85°'), findsOneWidget);
+      expect(find.text('EXIT'), findsOneWidget);
     });
 
-    testWidgets('WorkoutMediaViewport renders video with AI Trainer Entry Button overlay', (tester) async {
+    testWidgets('WorkoutMediaViewport renders video with AI Trainer Entry Button below video', (tester) async {
       const exercise = Exercise(
         id: 'ex-01',
         name: 'Barbell Back Squat',
@@ -191,9 +192,10 @@ void main() {
       expect(find.byType(AiTrainerEntryButton), findsOneWidget);
       expect(find.text('Start Live AI Trainer'), findsOneWidget);
 
-      // Tap entry button -> replaces video with AI camera view
+      // Tap entry button -> pushes full-screen Live AI Trainer route
       await tester.tap(find.byType(AiTrainerEntryButton));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('INITIALIZING AI VISION STREAM...'), findsOneWidget);
     });
   });

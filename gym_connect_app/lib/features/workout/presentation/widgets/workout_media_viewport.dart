@@ -2,29 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gym_connect_app/features/gamification/data/rep_counter_state_machine.dart';
 import 'package:gym_connect_app/features/gamification/presentation/providers/vision_ai_config_provider.dart';
-import 'package:gym_connect_app/features/gamification/presentation/widgets/vision_ai_camera_view.dart';
+import 'package:gym_connect_app/features/gamification/presentation/screens/vision_ai_live_trainer_screen.dart';
 import '../../domain/models/workout_models.dart';
+import '../providers/workout_notifier.dart';
 import 'ai_trainer_entry_button.dart';
 import 'exercise_pip_player.dart';
 
-class WorkoutMediaViewport extends ConsumerStatefulWidget {
+class WorkoutMediaViewport extends ConsumerWidget {
   final Exercise exercise;
   final int targetReps;
+  final int currentSet;
+  final int totalSets;
   final void Function(int newRepCount)? onRepCountChanged;
 
   const WorkoutMediaViewport({
     super.key,
     required this.exercise,
     this.targetReps = 12,
+    this.currentSet = 1,
+    this.totalSets = 3,
     this.onRepCountChanged,
   });
-
-  @override
-  ConsumerState<WorkoutMediaViewport> createState() => _WorkoutMediaViewportState();
-}
-
-class _WorkoutMediaViewportState extends ConsumerState<WorkoutMediaViewport> {
-  bool _isLiveAiActive = false;
 
   ExerciseMovementType _resolveMovementType(String name) {
     final lower = name.toLowerCase();
@@ -43,31 +41,39 @@ class _WorkoutMediaViewportState extends ConsumerState<WorkoutMediaViewport> {
     return ExerciseMovementType.generic;
   }
 
+  Future<void> _openLiveTrainer(BuildContext context, WidgetRef ref) async {
+    final reps = await VisionAiLiveTrainerScreen.show(
+      context,
+      movementType: _resolveMovementType(exercise.name),
+      targetReps: targetReps,
+      currentSet: currentSet,
+      totalSets: totalSets,
+      exerciseName: exercise.name,
+      placement: exercise.optimalCameraPlacement,
+      onRepCountChanged: onRepCountChanged,
+    );
+    if (reps != null && reps > 0) {
+      ref.read(workoutNotifierProvider.notifier).setRecordedMicroClipPath(exercise.videoUrl);
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final config = ref.watch(visionAiConfigProvider);
 
-    if (_isLiveAiActive && config.isLiveTrainerEnabled) {
-      return VisionAiCameraView(
-        movementType: _resolveMovementType(widget.exercise.name),
-        targetReps: widget.targetReps,
-        onRepCountChanged: widget.onRepCountChanged,
-        placement: widget.exercise.optimalCameraPlacement,
-        onStop: () => setState(() => _isLiveAiActive = false),
-      );
-    }
-
-    return Stack(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ExercisePipPlayer(exercise: widget.exercise),
-        if (config.isLiveTrainerEnabled)
-          Positioned(
-            top: 10,
-            right: 10,
+        ExercisePipPlayer(exercise: exercise),
+        if (config.isLiveTrainerEnabled) ...[
+          const SizedBox(height: 10),
+          Center(
             child: AiTrainerEntryButton(
-              onPressed: () => setState(() => _isLiveAiActive = true),
+              onPressed: () => _openLiveTrainer(context, ref),
             ),
           ),
+        ],
       ],
     );
   }
